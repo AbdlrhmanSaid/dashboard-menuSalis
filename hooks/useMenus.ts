@@ -27,6 +27,7 @@ export const useMenus = () => {
       }
     },
     enabled: !!localStorage.getItem("token"),
+    staleTime: 0,
   });
 };
 

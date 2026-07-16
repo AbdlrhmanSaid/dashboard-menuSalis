@@ -22,6 +22,7 @@ export const useProducts = () => {
     queryKey: ["products"],
     queryFn: getProducts,
     enabled: !!token,
+    staleTime: 0,
   });
 };
 export const useProduct = (id: string) => {

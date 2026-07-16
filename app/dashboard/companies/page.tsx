@@ -233,70 +233,99 @@ export default function CompanyDashboard() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredCompanies.map((company: Company) => (
-                <TableRow key={company._id} className="hover:bg-slate-50/50 transition-colors duration-150">
-                  {editingCompanyId === company._id ? (
-                    // Inline Edit row
-                    <>
-                      <TableCell>
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          {...register("logo")}
-                          className="max-w-[200px]"
-                        />
-                        {errors.logo && (
-                          <p className="mt-1 text-xs text-red-500">{errors.logo.message}</p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          {...register("name", {
-                            required: "اسم الشركة مطلوب",
-                            minLength: { value: 2, message: "2 أحرف على الأقل" },
-                          })}
-                        />
-                        {errors.name && (
-                          <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          {...register("description", {
-                            required: "الوصف مطلوب",
-                            minLength: { value: 5, message: "5 أحرف على الأقل" },
-                          })}
-                        />
-                        {errors.description && (
-                          <p className="mt-1 text-xs text-red-500">{errors.description.message}</p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={isUpdating}
-                            onClick={handleSubmit((data) => onSubmit(data, company._id))}
-                            className="h-8 w-8 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700"
-                            title="حفظ"
-                          >
-                            <Check className="h-4.5 w-4.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={isUpdating}
-                            onClick={cancelEditing}
-                            className="h-8 w-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700"
-                            title="إلغاء"
-                          >
-                            <X className="h-4.5 w-4.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </>
-                  ) : (
+              filteredCompanies.map((company: Company) => {
+                const isEditing = editingCompanyId === company._id;
+                return (
+                  <TableRow
+                    key={company._id}
+                    className={
+                      isEditing
+                        ? "bg-red-50/20 hover:bg-red-50/30 border-y-2 border-red-100/50 transition-colors duration-150"
+                        : "hover:bg-slate-50/50 transition-colors duration-150"
+                    }
+                  >
+                    {isEditing ? (
+                      // Inline Edit row
+                      <>
+                        <TableCell className="align-middle">
+                          <div className="flex items-center gap-3">
+                            {company.logo ? (
+                              <Image
+                                width={44}
+                                height={44}
+                                src={company.logo}
+                                alt={company.name}
+                                className="h-11 w-11 object-cover rounded-xl border border-slate-200 shadow-inner shrink-0"
+                              />
+                            ) : (
+                              <div className="h-11 w-11 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center text-xs font-semibold shrink-0">
+                                لا يوجد
+                              </div>
+                            )}
+                            <div className="flex flex-col gap-1 min-w-[120px]">
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                {...register("logo")}
+                                className="h-9 text-xs rounded-xl border-slate-200 bg-white"
+                              />
+                              <span className="text-[10px] text-slate-400 font-medium">تغيير الشعار (اختياري)</span>
+                            </div>
+                          </div>
+                          {errors.logo && (
+                            <p className="mt-1 text-xs text-red-500">{errors.logo.message}</p>
+                          )}
+                        </TableCell>
+                        <TableCell className="align-middle">
+                          <Input
+                            {...register("name", {
+                              required: "اسم الشركة مطلوب",
+                              minLength: { value: 2, message: "2 أحرف على الأقل" },
+                            })}
+                            className="rounded-xl border-slate-200 bg-white focus-visible:ring-red-500 focus-visible:border-red-500"
+                          />
+                          {errors.name && (
+                            <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
+                          )}
+                        </TableCell>
+                        <TableCell className="align-middle">
+                          <Input
+                            {...register("description", {
+                              required: "الوصف مطلوب",
+                              minLength: { value: 5, message: "5 أحرف على الأقل" },
+                            })}
+                            className="rounded-xl border-slate-200 bg-white focus-visible:ring-red-500 focus-visible:border-red-500 min-w-[200px]"
+                          />
+                          {errors.description && (
+                            <p className="mt-1 text-xs text-red-500">{errors.description.message}</p>
+                          )}
+                        </TableCell>
+                        <TableCell className="align-middle">
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              disabled={isUpdating}
+                              onClick={handleSubmit((data) => onSubmit(data, company._id))}
+                              className="h-9 w-9 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 shadow-sm border border-green-100"
+                              title="حفظ"
+                            >
+                              <Check className="h-5 w-5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              disabled={isUpdating}
+                              onClick={cancelEditing}
+                              className="h-9 w-9 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 shadow-sm border border-red-100"
+                              title="إلغاء"
+                            >
+                              <X className="h-5 w-5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </>
+                    ) : (
                     // Regular Display row
                     <>
                       <TableCell>
@@ -345,7 +374,7 @@ export default function CompanyDashboard() {
                     </>
                   )}
                 </TableRow>
-              ))
+              ); })
             )}
           </TableBody>
         </Table>

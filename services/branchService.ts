@@ -40,16 +40,16 @@ export const getBranches = async (): Promise<Branch[]> => {
 export const createBranch = async (
   branchData: CreateBranchRequest
 ): Promise<Branch> => {
-  const response = await api.post<Branch>("/branches", branchData);
-  return response.data;
+  const response = await api.post<{ message: string; branch: Branch }>("/branches", branchData);
+  return response.data.branch;
 };
 
 export const updateBranch = async (
   id: string,
   branchData: UpdateBranchRequest
 ): Promise<Branch> => {
-  const response = await api.put<Branch>(`/branches/${id}`, branchData);
-  return response.data;
+  const response = await api.put<{ message: string; branch: Branch }>(`/branches/${id}`, branchData);
+  return response.data.branch;
 };
 
 export const deleteBranch = async (id: string): Promise<void> => {

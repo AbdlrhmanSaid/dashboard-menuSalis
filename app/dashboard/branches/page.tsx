@@ -22,6 +22,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -83,6 +90,7 @@ export default function BranchesPage() {
   const isAdmin = user?.role === "admin";
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterCompanyId, setFilterCompanyId] = useState<string>("all");
   const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
   const [deletingBranchId, setDeletingBranchId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -306,10 +314,12 @@ export default function BranchesPage() {
 
   const filteredBranches = useMemo(() => {
     if (!branches || !Array.isArray(branches)) return [];
-    return branches.filter((branch) =>
-      branch.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [branches, searchTerm]);
+    return branches.filter((branch) => {
+      const matchesCompany = filterCompanyId === "all" || branch.company?._id === filterCompanyId;
+      const matchesSearch = branch.name.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesCompany && matchesSearch;
+    });
+  }, [branches, searchTerm, filterCompanyId]);
 
   const filteredCompanies = useMemo(() => {
     if (!companies || !Array.isArray(companies)) return [];
@@ -426,17 +436,55 @@ export default function BranchesPage() {
         }
       />
 
-      {/* Search Input Bar */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input
-            placeholder="ابحث عن فرع بالاسم..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pr-10 rounded-xl border-slate-200"
-          />
+      {/* Search Input Bar & Company Filter */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-slate-50/50 p-4 rounded-2xl border border-slate-100/70">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+          {/* Search bar */}
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              placeholder="ابحث عن فرع بالاسم..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pr-10 rounded-xl border-slate-200 bg-white focus-visible:ring-red-500"
+            />
+          </div>
+
+          {/* Company filter Select */}
+          <div className="w-full sm:w-[220px]">
+            <Select
+              value={filterCompanyId}
+              onValueChange={(value) => setFilterCompanyId(value)}
+            >
+              <SelectTrigger className="w-full rounded-xl border-slate-200 bg-white focus:ring-red-500">
+                <SelectValue placeholder="تصفية حسب الشركة" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl bg-white border border-slate-200">
+                <SelectItem value="all">كل الشركات (الكل)</SelectItem>
+                {companies?.map((company) => (
+                  <SelectItem key={company._id} value={company._id}>
+                    {company.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
+
+        {/* Reset filters button */}
+        {(searchTerm || filterCompanyId !== "all") && (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              setSearchTerm("");
+              setFilterCompanyId("all");
+            }}
+            className="text-xs font-semibold text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100/50"
+          >
+            إعادة تعيين الفلاتر
+          </Button>
+        )}
       </div>
 
       {/* Data Table */}

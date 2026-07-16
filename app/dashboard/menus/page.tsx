@@ -56,6 +56,7 @@ export default function MenuPageManage() {
   const isSupervisor = user?.role === "supervisor";
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterCompanyId, setFilterCompanyId] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<string>("");
   const [companySearch, setCompanySearch] = useState("");
@@ -73,10 +74,18 @@ export default function MenuPageManage() {
 
   const filteredMenus = useMemo(() => {
     if (!menus) return [];
-    return (menus as Menu[]).filter((menu) =>
-      menu.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [menus, searchTerm]);
+    return (menus as Menu[]).filter((menu) => {
+      const matchesSearch = menu.name.toLowerCase().includes(searchTerm.toLowerCase());
+      if (!filterCompanyId) return matchesSearch;
+      // Handle both populated object and raw string
+      const companyId =
+        typeof menu.company === "string"
+          ? menu.company
+          : (menu.company as any)?._id?.toString?.() ?? "";
+      const matchesCompany = companyId === filterCompanyId;
+      return matchesSearch && matchesCompany;
+    });
+  }, [menus, searchTerm, filterCompanyId]);
 
   const filteredCompanies = useMemo(() => {
     if (!companies) return [];
@@ -143,16 +152,44 @@ export default function MenuPageManage() {
       />
 
       {/* Top action bar */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+        <div className="relative w-full sm:max-w-xs">
           <Search className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             placeholder="ابحث عن منيو بالاسم..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pr-10 rounded-xl border-slate-200"
+            className="pr-10 rounded-xl border-slate-200 bg-white"
           />
         </div>
+
+        {/* Company Filter */}
+        <select
+          value={filterCompanyId}
+          onChange={(e) => setFilterCompanyId(e.target.value)}
+          className="rounded-xl border border-slate-200 text-slate-700 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 shadow-sm min-w-[160px] cursor-pointer"
+        >
+          <option value="">كل الشركات</option>
+          {companies?.map((c: Company) => (
+            <option key={c._id} value={c._id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+
+        {/* Reset Filters Button */}
+        {(filterCompanyId || searchTerm) && (
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setFilterCompanyId("");
+              setSearchTerm("");
+            }}
+            className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl"
+          >
+            إعادة تعيين الفلاتر
+          </Button>
+        )}
       </div>
 
       {/* Menus Table Container */}

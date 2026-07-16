@@ -2,8 +2,8 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useMenus } from "@/hooks/useMenus";
-import { useCompany } from "@/hooks/useCompanies";
-import { useBranchesByCompanySlug } from "@/hooks/useBranches";
+import { useCompany, useCompanies } from "@/hooks/useCompanies";
+import { useBranchesByCompanySlug, useBranches } from "@/hooks/useBranches";
 import {
   useProducts,
   useCreateProduct,
@@ -85,6 +85,8 @@ export default function ProductsManage() {
   } = useProducts();
 
   const { data: menus, isLoading: menusLoading } = useMenus();
+  const { data: companies, isLoading: companiesLoading } = useCompanies();
+  const { data: allBranches, isLoading: branchesLoading } = useBranches();
   const { mutate: createProduct, isPending: isCreating } = useCreateProduct();
   const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct();
   const { mutate: deleteProduct, isPending: isDeleting } = useDeleteProduct();
@@ -93,6 +95,12 @@ export default function ProductsManage() {
   const isAdmin = user?.role === "admin";
 
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Filters state
+  const [filterCompanyId, setFilterCompanyId] = useState("");
+  const [filterMenuId, setFilterMenuId] = useState("");
+  const [filterBranchId, setFilterBranchId] = useState("");
+
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -175,12 +183,73 @@ export default function ProductsManage() {
     },
   });
 
+  // Build company → Set<menuId> map from the menus list (not from products)
+  const menuIdsByCompany = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    if (!menus) return map;
+    for (const m of menus) {
+      const companyId = typeof m.company === "string"
+        ? m.company
+        : (m.company as any)?._id?.toString?.() ?? "";
+      if (!companyId) continue;
+      if (!map.has(companyId)) map.set(companyId, new Set());
+      map.get(companyId)!.add((m._id as any).toString());
+    }
+    return map;
+  }, [menus]);
+
   const filteredProducts = useMemo(() => {
     const productsArray = Array.isArray(products) ? products : [];
-    return productsArray.filter((product: Product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [products, searchTerm]);
+    return productsArray.filter((product: Product) => {
+      const matchesSearch = product.name?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Menu id from product (always a string from API)
+      const productMenuId = (product.menu as any)?._id?.toString?.() ?? String(product.menu ?? "");
+
+      // Company filter — use menus map to find which company owns this menu
+      let matchesCompany = true;
+      if (filterCompanyId) {
+        const companyMenuIds = menuIdsByCompany.get(filterCompanyId);
+        matchesCompany = !!companyMenuIds?.has(productMenuId);
+      }
+
+      // Menu filter
+      const matchesMenu = !filterMenuId || productMenuId === filterMenuId;
+
+      // Branch filter
+      const matchesBranch =
+        !filterBranchId ||
+        product.availableBranches?.some(
+          (b) => ((b as any)?._id?.toString?.() ?? String(b)) === filterBranchId
+        );
+
+      return matchesSearch && matchesCompany && matchesMenu && matchesBranch;
+    });
+  }, [products, searchTerm, filterCompanyId, filterMenuId, filterBranchId, menuIdsByCompany]);
+
+  // Reset menu and branch filters if company changes and current selection is no longer valid
+  useEffect(() => {
+    if (filterCompanyId) {
+      if (filterMenuId) {
+        const menuObj = menus?.find((m) => m._id === filterMenuId);
+        const menuCompanyId = typeof menuObj?.company === "string"
+          ? menuObj.company
+          : (menuObj?.company as any)?._id?.toString?.() ?? "";
+        if (menuCompanyId !== filterCompanyId) {
+          setFilterMenuId("");
+        }
+      }
+      if (filterBranchId) {
+        const branchObj = allBranches?.find((b) => b._id === filterBranchId);
+        const branchCompanyId = typeof branchObj?.company === "string"
+          ? branchObj.company
+          : (branchObj?.company as any)?._id?.toString?.() ?? "";
+        if (branchCompanyId !== filterCompanyId) {
+          setFilterBranchId("");
+        }
+      }
+    }
+  }, [filterCompanyId, filterMenuId, filterBranchId, menus, allBranches]);
 
   const filteredMenus = useMemo(() => {
     if (!menus || !Array.isArray(menus)) return [];
@@ -399,7 +468,7 @@ export default function ProductsManage() {
     setValue("availableBranches", editingBranches);
   }, [editingBranches, setValue]);
 
-  if (!mounted || productsLoading || menusLoading) {
+  if (!mounted || productsLoading || menusLoading || companiesLoading || branchesLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loading />
@@ -428,15 +497,82 @@ export default function ProductsManage() {
       />
 
       {/* Top action bar */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input
-            placeholder="ابحث عن منتج بالاسم..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pr-10 rounded-xl border-slate-200"
-          />
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+        <div className="flex flex-wrap items-center gap-3 flex-1">
+          {/* Search Box */}
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              placeholder="ابحث عن منتج بالاسم..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pr-10 rounded-xl border-slate-200 bg-white"
+            />
+          </div>
+
+          {/* Company Filter */}
+          <select
+            value={filterCompanyId}
+            onChange={(e) => setFilterCompanyId(e.target.value)}
+            className="rounded-xl border border-slate-200 text-slate-700 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 shadow-sm min-w-[160px] cursor-pointer"
+          >
+            <option value="">كل الشركات</option>
+            {companies?.map((c) => (
+              <option key={c._id} value={c._id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Menu Filter */}
+          <select
+            value={filterMenuId}
+            onChange={(e) => setFilterMenuId(e.target.value)}
+            className="rounded-xl border border-slate-200 text-slate-700 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 shadow-sm min-w-[160px] cursor-pointer"
+          >
+            <option value="">كل القوائم (المنيو)</option>
+            {(filterCompanyId
+              ? menus?.filter((m) => m.company?._id === filterCompanyId)
+              : menus
+            )?.map((m) => (
+              <option key={m._id} value={m._id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Branch Filter */}
+          <select
+            value={filterBranchId}
+            onChange={(e) => setFilterBranchId(e.target.value)}
+            className="rounded-xl border border-slate-200 text-slate-700 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 shadow-sm min-w-[160px] cursor-pointer"
+          >
+            <option value="">كل الفروع</option>
+            {(filterCompanyId
+              ? allBranches?.filter((b) => b.company?._id === filterCompanyId)
+              : allBranches
+            )?.map((b) => (
+              <option key={b._id} value={b._id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Reset Filters Button */}
+          {(filterCompanyId || filterMenuId || filterBranchId || searchTerm) && (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setFilterCompanyId("");
+                setFilterMenuId("");
+                setFilterBranchId("");
+                setSearchTerm("");
+              }}
+              className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl"
+            >
+              إعادة تعيين الفلاتر
+            </Button>
+          )}
         </div>
       </div>
 
@@ -462,87 +598,116 @@ export default function ProductsManage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredProducts.map((product: Product) => (
-                <TableRow key={product._id} className="hover:bg-slate-50/50 transition-colors duration-150">
-                  {editingProductId === product._id ? (
-                    // Inline Editing Row
-                    <>
-                      <TableCell>
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          {...register("image")}
-                          className="max-w-[150px]"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          {...register("name", {
-                            required: "اسم المنتج مطلوب",
-                            minLength: { value: 2, message: "2 أحرف على الأقل" },
-                          })}
-                        />
-                        {errors.name && (
-                          <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <textarea
-                          {...register("description", {
-                            required: "الوصف مطلوب",
-                            minLength: { value: 5, message: "5 أحرف على الأقل" },
-                          })}
-                          className="min-h-16 w-full rounded-xl border border-slate-200 bg-white p-2 text-sm focus:outline-none"
-                        />
-                        {errors.description && (
-                          <p className="mt-1 text-xs text-red-500">{errors.description.message}</p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          {...register("price", {
-                            min: { value: 0, message: "السعر يجب أن يكون أكبر من 0" },
-                          })}
-                        />
-                        {errors.price && (
-                          <p className="mt-1 text-xs text-red-500">{errors.price.message}</p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-slate-700">{product.menu?.name || "غير محدد"}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-slate-500 font-semibold">{editingBranches.length} فروع</span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={isUpdating}
-                            onClick={handleSubmit((data) => onSubmit(data, product._id))}
-                            className="h-8 w-8 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700"
-                            title="حفظ"
-                          >
-                            <Check className="h-4.5 w-4.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={isUpdating}
-                            onClick={cancelEditing}
-                            className="h-8 w-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700"
-                            title="إلغاء"
-                          >
-                            <X className="h-4.5 w-4.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </>
-                  ) : (
+              filteredProducts.map((product: Product) => {
+                const isEditing = editingProductId === product._id;
+                return (
+                  <TableRow
+                    key={product._id}
+                    className={
+                      isEditing
+                        ? "bg-red-50/20 hover:bg-red-50/30 border-y-2 border-red-100/50 transition-colors duration-150"
+                        : "hover:bg-slate-50/50 transition-colors duration-150"
+                    }
+                  >
+                    {isEditing ? (
+                      // Inline Editing Row
+                      <>
+                        <TableCell className="align-middle">
+                          <div className="flex items-center gap-3">
+                            {product.image?.url ? (
+                              <Image
+                                width={44}
+                                height={44}
+                                src={product.image.url}
+                                alt={product.name}
+                                className="h-11 w-11 object-cover rounded-xl border border-slate-200 shadow-inner shrink-0"
+                              />
+                            ) : (
+                              <div className="h-11 w-11 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center text-xs font-semibold shrink-0">
+                                لا يوجد
+                              </div>
+                            )}
+                            <div className="flex flex-col gap-1 min-w-[120px]">
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                {...register("image")}
+                                className="h-9 text-xs rounded-xl border-slate-200 bg-white"
+                              />
+                              <span className="text-[10px] text-slate-400 font-medium">تغيير الصورة (اختياري)</span>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="align-middle">
+                          <Input
+                            {...register("name", {
+                              required: "اسم المنتج مطلوب",
+                              minLength: { value: 2, message: "2 أحرف على الأقل" },
+                            })}
+                            className="rounded-xl border-slate-200 bg-white focus-visible:ring-red-500 focus-visible:border-red-500 min-w-[120px]"
+                          />
+                          {errors.name && (
+                            <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
+                          )}
+                        </TableCell>
+                        <TableCell className="align-middle">
+                          <textarea
+                            {...register("description", {
+                              required: "الوصف مطلوب",
+                              minLength: { value: 5, message: "5 أحرف على الأقل" },
+                            })}
+                            className="min-h-[70px] w-full rounded-xl border border-slate-200 bg-white p-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 min-w-[180px]"
+                          />
+                          {errors.description && (
+                            <p className="mt-1 text-xs text-red-500">{errors.description.message}</p>
+                          )}
+                        </TableCell>
+                        <TableCell className="align-middle">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            {...register("price", {
+                              min: { value: 0, message: "السعر يجب أن يكون أكبر من 0" },
+                            })}
+                            className="rounded-xl border-slate-200 bg-white focus-visible:ring-red-500 focus-visible:border-red-500 max-w-[80px]"
+                          />
+                          {errors.price && (
+                            <p className="mt-1 text-xs text-red-500">{errors.price.message}</p>
+                          )}
+                        </TableCell>
+                        <TableCell className="align-middle text-slate-700 font-medium">
+                          {product.menu?.name || "غير محدد"}
+                        </TableCell>
+                        <TableCell className="align-middle text-slate-500 font-semibold">
+                          {editingBranches.length} فروع
+                        </TableCell>
+                        <TableCell className="align-middle">
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              disabled={isUpdating}
+                              onClick={handleSubmit((data) => onSubmit(data, product._id))}
+                              className="h-9 w-9 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 shadow-sm border border-green-100"
+                              title="حفظ"
+                            >
+                              <Check className="h-5 w-5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              disabled={isUpdating}
+                              onClick={cancelEditing}
+                              className="h-9 w-9 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 shadow-sm border border-red-100"
+                              title="إلغاء"
+                            >
+                              <X className="h-5 w-5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </>
+                    ) : (
                     // Read-only Row
                     <>
                       <TableCell>
@@ -619,7 +784,7 @@ export default function ProductsManage() {
                     </>
                   )}
                 </TableRow>
-              ))
+              ); })
             )}
           </TableBody>
         </Table>

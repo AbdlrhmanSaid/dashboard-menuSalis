@@ -10,16 +10,16 @@ export const getMenus = async (): Promise<Menu[]> => {
 export const createMenu = async (
   menuData: CreateMenuRequest
 ): Promise<Menu> => {
-  const response = await api.post<Menu>("/menus", menuData);
-  return response.data;
+  const response = await api.post<{ message: string; menu: Menu }>("/menus", menuData);
+  return response.data.menu;
 };
 
 export const updateMenu = async (
   id: string,
   menuData: UpdateMenuRequest
 ): Promise<Menu> => {
-  const response = await api.put<Menu>(`/menus/${id}`, menuData);
-  return response.data;
+  const response = await api.put<{ message: string; menu: Menu }>(`/menus/${id}`, menuData);
+  return response.data.menu;
 };
 
 export const deleteMenu = async (id: string): Promise<void> => {

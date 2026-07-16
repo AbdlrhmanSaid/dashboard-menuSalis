@@ -84,8 +84,11 @@ export const updateProduct = async (
 
   // No image, send as JSON
   const { imageFile, ...jsonData } = productData;
-  const response = await api.put<Product>(`/products/${id}`, jsonData);
-  return response.data;
+  const response = await api.put<{ message: string; product: Product }>(
+    `/products/${id}`,
+    jsonData
+  );
+  return response.data.product;
 };
 
 export const deleteProduct = async (id: string): Promise<void> => {
