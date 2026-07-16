@@ -20,7 +20,7 @@ export default function ProductItem({
   // Safe availability check supporting both ObjectId strings and populated Branch objects
   const isAvailable = useMemo(() => {
     if (!product.availableBranches || !Array.isArray(product.availableBranches)) return false;
-    return product.availableBranches.some((branch: any) => {
+    return product.availableBranches.some((branch: string | { _id: string }) => {
       if (typeof branch === "string") {
         return branch === branchId;
       }

@@ -151,7 +151,7 @@ export default function ProductDetailsPage() {
 
               {product.availableBranches && product.availableBranches.length > 0 ? (
                 <div className="flex flex-wrap gap-2 pt-1 justify-start">
-                  {product.availableBranches.map((branch: any) => (
+                  {product.availableBranches.map((branch: { _id: string; name: string }) => (
                     <Badge
                       key={branch._id}
                       variant="secondary"

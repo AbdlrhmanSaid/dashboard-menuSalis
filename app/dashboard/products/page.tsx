@@ -17,7 +17,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  toggleProductInBranch,
   updateProductBranches,
 } from "@/services/productService";
 import {
@@ -190,10 +189,10 @@ export default function ProductsManage() {
     for (const m of menus) {
       const companyId = typeof m.company === "string"
         ? m.company
-        : (m.company as any)?._id?.toString?.() ?? "";
+        : (m.company as { _id?: string })?._id?.toString?.() ?? "";
       if (!companyId) continue;
       if (!map.has(companyId)) map.set(companyId, new Set());
-      map.get(companyId)!.add((m._id as any).toString());
+      map.get(companyId)!.add((m._id as string).toString());
     }
     return map;
   }, [menus]);
@@ -204,7 +203,7 @@ export default function ProductsManage() {
       const matchesSearch = product.name?.toLowerCase().includes(searchTerm.toLowerCase());
 
       // Menu id from product (always a string from API)
-      const productMenuId = (product.menu as any)?._id?.toString?.() ?? String(product.menu ?? "");
+      const productMenuId = (product.menu as { _id?: string })?._id?.toString?.() ?? String(product.menu ?? "");
 
       // Company filter — use menus map to find which company owns this menu
       let matchesCompany = true;
@@ -220,7 +219,7 @@ export default function ProductsManage() {
       const matchesBranch =
         !filterBranchId ||
         product.availableBranches?.some(
-          (b) => ((b as any)?._id?.toString?.() ?? String(b)) === filterBranchId
+          (b) => ((b as { _id?: string })?._id?.toString?.() ?? String(b)) === filterBranchId
         );
 
       return matchesSearch && matchesCompany && matchesMenu && matchesBranch;
@@ -234,7 +233,7 @@ export default function ProductsManage() {
         const menuObj = menus?.find((m) => m._id === filterMenuId);
         const menuCompanyId = typeof menuObj?.company === "string"
           ? menuObj.company
-          : (menuObj?.company as any)?._id?.toString?.() ?? "";
+          : (menuObj?.company as { _id?: string })?._id?.toString?.() ?? "";
         if (menuCompanyId !== filterCompanyId) {
           setFilterMenuId("");
         }
@@ -243,7 +242,7 @@ export default function ProductsManage() {
         const branchObj = allBranches?.find((b) => b._id === filterBranchId);
         const branchCompanyId = typeof branchObj?.company === "string"
           ? branchObj.company
-          : (branchObj?.company as any)?._id?.toString?.() ?? "";
+          : (branchObj?.company as { _id?: string })?._id?.toString?.() ?? "";
         if (branchCompanyId !== filterCompanyId) {
           setFilterBranchId("");
         }

@@ -20,16 +20,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+
 import {
   Command,
   CommandEmpty,
@@ -58,7 +49,8 @@ export default function MenuPageManage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCompanyId, setFilterCompanyId] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedCompany, setSelectedCompany] = useState<string>("");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [selectedCompany, setSelectedCompany] = useState<string>(""); // used to track selected company for create form
   const [companySearch, setCompanySearch] = useState("");
 
   // Form for creation
@@ -81,7 +73,7 @@ export default function MenuPageManage() {
       const companyId =
         typeof menu.company === "string"
           ? menu.company
-          : (menu.company as any)?._id?.toString?.() ?? "";
+          : (menu.company as { _id?: string })?._id?.toString?.() ?? "";
       const matchesCompany = companyId === filterCompanyId;
       return matchesSearch && matchesCompany;
     });
@@ -108,7 +100,7 @@ export default function MenuPageManage() {
     );
   };
 
-  const handleUpdate = (id: string, data: any, callback: () => void) => {
+  const handleUpdate = (id: string, data: Partial<CreateMenuRequest>, callback: () => void) => {
     updateMenu(
       { id, data },
       {

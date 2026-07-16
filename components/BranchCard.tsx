@@ -3,10 +3,7 @@
 import { Branch } from "@/types/branch";
 import {
   Card,
-  CardHeader,
   CardTitle,
-  CardDescription,
-  CardContent,
 } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { Store, MapPin, CheckCircle, XCircle } from "lucide-react";

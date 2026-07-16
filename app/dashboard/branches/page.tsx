@@ -94,6 +94,7 @@ export default function BranchesPage() {
   const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
   const [deletingBranchId, setDeletingBranchId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedCompany, setSelectedCompany] = useState("");
   const [companySearch, setCompanySearch] = useState("");
   const [editCompanySearch, setEditCompanySearch] = useState("");

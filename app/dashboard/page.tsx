@@ -3,7 +3,7 @@ import React, { memo, useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import { Shield, Clock, Activity } from "lucide-react";
-import { motion } from "framer-motion";
+
 
 const DashboardPage = () => {
   const { user } = useAuth();

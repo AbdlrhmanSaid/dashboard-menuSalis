@@ -4,9 +4,7 @@ import { Company } from "@/types/company";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
   CardDescription,
-  CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Edit2, Trash2, ChevronDown, ChevronUp, Building } from "lucide-react";
