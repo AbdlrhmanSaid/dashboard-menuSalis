@@ -49,8 +49,8 @@ export default function BranchCard({ branch, slug }: BranchCardProps) {
 
             {/* Branch Details */}
             <div className="space-y-1.5 flex-1 min-w-0 text-right">
-              <div className="flex items-center justify-between gap-2">
-                <CardTitle className="text-base font-bold text-slate-800 truncate">
+              <div className="flex items-start justify-between gap-2">
+                <CardTitle className="text-base font-bold text-slate-800">
                   {cleanedName}
                 </CardTitle>
 
@@ -70,7 +70,7 @@ export default function BranchCard({ branch, slug }: BranchCardProps) {
 
               <div className="flex items-start gap-1.5 text-xs text-slate-500 font-medium leading-relaxed">
                 <MapPin className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
-                <span className="truncate">{cleanedAddress || "لا يوجد عنوان مسجل لهذا الفرع"}</span>
+                <span>{cleanedAddress || "لا يوجد عنوان مسجل لهذا الفرع"}</span>
               </div>
             </div>
           </div>

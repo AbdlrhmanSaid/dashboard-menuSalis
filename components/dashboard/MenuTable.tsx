@@ -13,6 +13,15 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 import {
   AlertDialog,
@@ -35,8 +44,6 @@ import {
 import {
   Edit2,
   Trash2,
-  Check,
-  X,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -67,6 +74,7 @@ export default function MenuTable({
 }: MenuTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // Auto-complete / Search for edit company dropdown
   const [editCompanySearch, setEditCompanySearch] = useState("");
@@ -87,9 +95,11 @@ export default function MenuTable({
       company: menu.company._id,
     });
     setEditCompanySearch(menu.company.name);
+    setIsEditDialogOpen(true);
   };
 
   const cancelEditing = () => {
+    setIsEditDialogOpen(false);
     setEditingId(null);
     reset();
   };
@@ -104,6 +114,7 @@ export default function MenuTable({
         company: data.company,
       },
       () => {
+        setIsEditDialogOpen(false);
         setEditingId(null);
         reset();
         toast.success("تم تحديث المنيو بنجاح");
@@ -154,155 +165,169 @@ export default function MenuTable({
                   key={menu._id}
                   className="hover:bg-gray-50/50 transition-colors duration-150"
                 >
-                  {editingId === menu._id ? (
-                    // Editing Mode Row
-                    <>
-                      <TableCell>
-                        <Input
-                          {...register("name", {
-                            required: "اسم المنيو مطلوب",
-                            minLength: {
-                              value: 2,
-                              message: "2 أحرف على الأقل",
-                            },
-                          })}
-                        />
-                        {errors.name && (
-                          <p className="mt-1 text-xs text-red-500">
-                            {errors.name.message}
-                          </p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          {...register("description", {
-                            required: "الوصف مطلوب",
-                            minLength: {
-                              value: 5,
-                              message: "5 أحرف على الأقل",
-                            },
-                          })}
-                        />
-                        {errors.description && (
-                          <p className="mt-1 text-xs text-red-500">
-                            {errors.description.message}
-                          </p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Command className="border rounded-xl bg-white max-w-[200px]">
-                          <CommandInput
-                            placeholder="ابحث عن شركة..."
-                            value={editCompanySearch}
-                            onValueChange={setEditCompanySearch}
-                          />
-                          <CommandList>
-                            <CommandEmpty>لا توجد شركات</CommandEmpty>
-                            <CommandGroup>
-                              {filteredCompanies.map((company) => (
-                                <CommandItem
-                                  key={company._id}
-                                  onSelect={() => {
-                                    setValue("company", company._id);
-                                    setEditCompanySearch(company.name);
-                                  }}
-                                >
-                                  {company.name}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                        {errors.company && (
-                          <p className="mt-1 text-xs text-red-500">
-                            اختيار الشركة مطلوب
-                          </p>
-                        )}
-                      </TableCell>
-                      <TableCell>{menu.products?.length || 0}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
+                  <TableCell className="font-semibold text-gray-800">
+                    {menu.name}
+                  </TableCell>
+                  <TableCell
+                    className="text-gray-500 max-w-[250px] truncate"
+                    title={menu.description}
+                  >
+                    {menu.description}
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center rounded-lg bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                      {menu.company?.name}
+                    </span>
+                  </TableCell>
+                  <TableCell className="font-semibold text-gray-600">
+                    {menu.products?.length || 0} منتجات
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      {isSupervisor ? (
+                        <>
                           <Button
                             variant="ghost"
                             size="icon"
-                            disabled={isUpdating}
-                            onClick={handleSubmit(onSubmitForm)}
-                            className="h-8 w-8 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700"
-                            title="حفظ"
+                            onClick={() => startEditing(menu)}
+                            className="h-8 w-8 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                            title="تعديل المنيو"
                           >
-                            <Check className="h-4.5 w-4.5" />
+                            <Edit2 className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            disabled={isUpdating}
-                            onClick={cancelEditing}
-                            className="h-8 w-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700"
-                            title="إلغاء"
+                            onClick={() => setDeletingId(menu._id)}
+                            className="h-8 w-8 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700"
+                            title="حذف المنيو"
                           >
-                            <X className="h-4.5 w-4.5" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        </div>
-                      </TableCell>
-                    </>
-                  ) : (
-                    // Regular Display Row
-                    <>
-                      <TableCell className="font-semibold text-gray-800">
-                        {menu.name}
-                      </TableCell>
-                      <TableCell
-                        className="text-gray-500 max-w-[250px] truncate"
-                        title={menu.description}
-                      >
-                        {menu.description}
-                      </TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center rounded-lg bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                          {menu.company?.name}
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-400">
+                          لا توجد صلاحيات
                         </span>
-                      </TableCell>
-                      <TableCell className="font-semibold text-gray-600">
-                        {menu.products?.length || 0} منتجات
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          {isSupervisor ? (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => startEditing(menu)}
-                                className="h-8 w-8 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                                title="تعديل المنيو"
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setDeletingId(menu._id)}
-                                className="h-8 w-8 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700"
-                                title="حذف المنيو"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </>
-                          ) : (
-                            <span className="text-xs text-gray-400">
-                              لا توجد صلاحيات
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                    </>
-                  )}
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </div>
+
+      {/* Edit Menu Dialog Modal */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md rounded-2xl bg-white p-6">
+          <DialogHeader className="text-right">
+            <DialogTitle className="text-xl font-bold text-slate-900">
+              تعديل المنيو
+            </DialogTitle>
+            <DialogDescription className="text-sm text-slate-500">
+              تعديل اسم المنيو ووصفه والشركة المرتبط بها.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4 mt-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="editName" className="font-semibold text-slate-700">
+                اسم المنيو
+              </Label>
+              <Input
+                id="editName"
+                {...register("name", {
+                  required: "اسم المنيو مطلوب",
+                  minLength: {
+                    value: 2,
+                    message: "2 أحرف على الأقل",
+                  },
+                })}
+                disabled={isUpdating}
+                className="rounded-xl border-slate-200"
+              />
+              {errors.name && (
+                <p className="text-xs text-red-500">{errors.name.message}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="editDescription" className="font-semibold text-slate-700">
+                وصف المنيو
+              </Label>
+              <Input
+                id="editDescription"
+                {...register("description", {
+                  required: "الوصف مطلوب",
+                  minLength: {
+                    value: 5,
+                    message: "5 أحرف على الأقل",
+                  },
+                })}
+                disabled={isUpdating}
+                className="rounded-xl border-slate-200"
+              />
+              {errors.description && (
+                <p className="text-xs text-red-500">{errors.description.message}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="editCompany" className="font-semibold text-slate-700">
+                الشركة
+              </Label>
+              <Command className="border rounded-xl bg-white">
+                <CommandInput
+                  placeholder="ابحث عن شركة..."
+                  value={editCompanySearch}
+                  onValueChange={setEditCompanySearch}
+                  disabled={isUpdating}
+                />
+                <CommandList>
+                  <CommandEmpty>لا توجد شركات مسجلة</CommandEmpty>
+                  <CommandGroup>
+                    {filteredCompanies.map((company) => (
+                      <CommandItem
+                        key={company._id}
+                        onSelect={() => {
+                          setValue("company", company._id);
+                          setEditCompanySearch(company.name);
+                        }}
+                      >
+                        {company.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+              {errors.company && (
+                <p className="text-xs text-red-500">اختيار الشركة مطلوب</p>
+              )}
+            </div>
+
+            <DialogFooter className="flex gap-2 justify-start mt-6 border-t border-slate-100 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={cancelEditing}
+                disabled={isUpdating}
+                className="rounded-xl border-slate-200"
+              >
+                إلغاء
+              </Button>
+              <Button
+                type="submit"
+                disabled={isUpdating}
+                className="rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold"
+              >
+                {isUpdating ? "جاري الحفظ..." : "حفظ التغييرات"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
 
       {/* Delete Confirmation Alert Dialog */}

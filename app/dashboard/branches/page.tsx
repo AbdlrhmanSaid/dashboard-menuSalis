@@ -54,7 +54,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Edit2, Trash2, Check, X, Plus, Search, QrCode, Printer, Download, ExternalLink } from "lucide-react";
+import { Edit2, Trash2, Plus, Search, QrCode, Printer, Download, ExternalLink } from "lucide-react";
 import { useForm } from "react-hook-form";
 import Loading from "@/components/Loading";
 import {
@@ -94,6 +94,7 @@ export default function BranchesPage() {
   const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
   const [deletingBranchId, setDeletingBranchId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedCompany, setSelectedCompany] = useState("");
   const [companySearch, setCompanySearch] = useState("");
@@ -346,9 +347,11 @@ export default function BranchesPage() {
       isActive: branch.isActive,
     });
     setEditCompanySearch(branch.company.name);
+    setIsEditDialogOpen(true);
   };
 
   const cancelEditing = () => {
+    setIsEditDialogOpen(false);
     setEditingBranchId(null);
     reset();
     setEditCompanySearch("");
@@ -369,6 +372,7 @@ export default function BranchesPage() {
       { id: branchId, data: updateData },
       {
         onSuccess: async () => {
+          setIsEditDialogOpen(false);
           setEditingBranchId(null);
           reset();
           setEditCompanySearch("");
@@ -513,165 +517,74 @@ export default function BranchesPage() {
             ) : (
               filteredBranches.map((branch) => (
                 <TableRow key={branch._id} className="hover:bg-slate-50/50 transition-colors duration-150">
-                  {editingBranchId === branch._id ? (
-                    // Inline Edit mode
-                    <>
-                      <TableCell>
-                        <Input
-                          {...register("name", {
-                            required: "اسم الفرع مطلوب",
-                            minLength: { value: 2, message: "2 أحرف على الأقل" },
-                          })}
+                  <TableCell className="font-semibold text-slate-800">{branch.name}</TableCell>
+                  <TableCell className="text-slate-500">{branch.address || "—"}</TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">
+                      {branch.company?.name}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    {isAdmin ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          id={`toggleIsActive-${branch._id}`}
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer"
+                          checked={branch.isActive}
+                          onChange={() => handleToggleBranchStatus(branch._id)}
                         />
-                        {errors.name && (
-                          <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Input {...register("address")} placeholder="العنوان" />
-                      </TableCell>
-                      <TableCell>
-                        <Command className="border rounded-xl bg-white max-w-[200px]">
-                          <CommandInput
-                            placeholder="ابحث عن شركة..."
-                            value={editCompanySearch}
-                            onValueChange={setEditCompanySearch}
-                          />
-                          <CommandList>
-                            <CommandEmpty>لا توجد شركات</CommandEmpty>
-                            <CommandGroup>
-                              {filteredEditCompanies.map((company: Company) => (
-                                <CommandItem
-                                  key={company._id}
-                                  onSelect={() => {
-                                    setSelectedCompany(company._id);
-                                    setValue("company", company._id);
-                                    setEditCompanySearch(company.name);
-                                  }}
-                                >
-                                  {company.name}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                        {errors.company && (
-                          <p className="mt-1 text-xs text-red-500">اختيار الشركة مطلوب</p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <input
-                            id={`editIsActive-${branch._id}`}
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
-                            {...register("isActive")}
-                            defaultChecked={branch.isActive}
-                          />
-                          <Label htmlFor={`editIsActive-${branch._id}`} className="text-sm font-medium text-slate-700">
-                            نشط ويعمل
-                          </Label>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">—</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={isUpdating}
-                            onClick={handleSubmit((data) => onSubmit(data, branch._id))}
-                            className="h-8 w-8 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700"
-                            title="حفظ التعديلات"
-                          >
-                            <Check className="h-4.5 w-4.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={isUpdating}
-                            onClick={cancelEditing}
-                            className="h-8 w-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700"
-                            title="إلغاء التعديل"
-                          >
-                            <X className="h-4.5 w-4.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </>
-                  ) : (
-                    // Read Mode
-                    <>
-                      <TableCell className="font-semibold text-slate-800">{branch.name}</TableCell>
-                      <TableCell className="text-slate-500">{branch.address || "—"}</TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">
-                          {branch.company?.name}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {isAdmin ? (
-                          <div className="flex items-center gap-2">
-                            <input
-                              id={`toggleIsActive-${branch._id}`}
-                              type="checkbox"
-                              className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer"
-                              checked={branch.isActive}
-                              onChange={() => handleToggleBranchStatus(branch._id)}
-                            />
-                            <Label htmlFor={`toggleIsActive-${branch._id}`} className="text-sm font-semibold text-slate-700 cursor-pointer">
-                              {branch.isActive ? "نشط" : "معطل"}
-                            </Label>
-                          </div>
-                        ) : (
-                          <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                              branch.isActive
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                : "bg-red-50 text-red-700 border border-red-200"
-                            }`}
-                          >
-                            {branch.isActive ? "نشط" : "معطل"}
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
+                        <Label htmlFor={`toggleIsActive-${branch._id}`} className="text-sm font-semibold text-slate-700 cursor-pointer">
+                          {branch.isActive ? "نشط" : "معطل"}
+                        </Label>
+                      </div>
+                    ) : (
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                          branch.isActive
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-red-50 text-red-700 border border-red-200"
+                        }`}
+                      >
+                        {branch.isActive ? "نشط" : "معطل"}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setActiveQrBranch(branch)}
+                      className="h-9 w-9 rounded-lg bg-red-50/50 text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
+                      title="عرض رمز QR للفرع"
+                    >
+                      <QrCode className="h-5 w-5" />
+                    </Button>
+                  </TableCell>
+                  {isSupervisor && (
+                    <TableCell>
+                      <div className="flex gap-2">
                         <Button
-                          type="button"
                           variant="ghost"
                           size="icon"
-                          onClick={() => setActiveQrBranch(branch)}
-                          className="h-9 w-9 rounded-lg bg-red-50/50 text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
-                          title="عرض رمز QR للفرع"
+                          onClick={() => startEditing(branch)}
+                          className="h-8 w-8 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                          title="تعديل الفرع"
                         >
-                          <QrCode className="h-5 w-5" />
+                          <Edit2 className="h-4 w-4" />
                         </Button>
-                      </TableCell>
-                      {isSupervisor && (
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => startEditing(branch)}
-                              className="h-8 w-8 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                              title="تعديل الفرع"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeletingBranchId(branch._id)}
-                              className="h-8 w-8 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700"
-                              title="حذف الفرع"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      )}
-                    </>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeletingBranchId(branch._id)}
+                          className="h-8 w-8 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700"
+                          title="حذف الفرع"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   )}
                 </TableRow>
               ))
@@ -788,6 +701,113 @@ export default function BranchesPage() {
               </Button>
               <Button type="submit" disabled={isCreating} className="rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold">
                 {isCreating ? "جاري الإضافة..." : "إضافة الفرع"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog Modal */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md rounded-2xl bg-white p-6">
+          <DialogHeader className="text-right">
+            <DialogTitle className="text-xl font-bold text-slate-900">تعديل الفرع</DialogTitle>
+            <DialogDescription className="text-sm text-slate-500">
+              تعديل تفاصيل الفرع والشركة التابع لها.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit((data) => editingBranchId && onSubmit(data, editingBranchId))} className="space-y-4 mt-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="editName" className="font-semibold text-slate-700">اسم الفرع</Label>
+              <Input
+                id="editName"
+                {...register("name", {
+                  required: "اسم الفرع مطلوب",
+                  minLength: { value: 2, message: "2 أحرف على الأقل" },
+                })}
+                placeholder="أدخل اسم الفرع"
+                disabled={isUpdating}
+                onChange={(e) => {
+                  register("name").onChange(e);
+                  setValue("slug", slugify(e.target.value), {
+                    shouldValidate: true,
+                  });
+                }}
+                className="rounded-xl border-slate-200"
+              />
+              {errors.name && (
+                <p className="text-xs text-red-500">{errors.name.message}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="editCompany" className="font-semibold text-slate-700">الشركة</Label>
+              <Command className="border rounded-xl bg-white">
+                <CommandInput
+                  placeholder="ابحث عن شركة..."
+                  value={editCompanySearch}
+                  onValueChange={setEditCompanySearch}
+                  disabled={isUpdating}
+                />
+                <CommandList>
+                  <CommandEmpty>لا توجد شركات مسجلة</CommandEmpty>
+                  <CommandGroup>
+                    {filteredEditCompanies.map((company: Company) => (
+                      <CommandItem
+                        key={company._id}
+                        onSelect={() => {
+                          setValue("company", company._id);
+                          setEditCompanySearch(company.name);
+                        }}
+                      >
+                        {company.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+              {errors.company && (
+                <p className="text-xs text-red-500">اختيار الشركة مطلوب</p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="editAddress" className="font-semibold text-slate-700">العنوان</Label>
+              <Input
+                id="editAddress"
+                {...register("address")}
+                placeholder="مثال: شارع 9، المعادي، القاهرة"
+                disabled={isUpdating}
+                className="rounded-xl border-slate-200"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                id="editIsActive"
+                type="checkbox"
+                className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer"
+                {...register("isActive")}
+                disabled={isUpdating}
+              />
+              <Label htmlFor="editIsActive" className="text-sm font-medium text-slate-700 cursor-pointer">
+                الفرع نشط ويعمل
+              </Label>
+            </div>
+
+            <DialogFooter className="flex gap-2 justify-start mt-6 border-t border-slate-100 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={cancelEditing}
+                disabled={isUpdating}
+                className="rounded-xl border-slate-200"
+              >
+                إلغاء
+              </Button>
+              <Button type="submit" disabled={isUpdating} className="rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold">
+                {isUpdating ? "جاري الحفظ..." : "حفظ التغييرات"}
               </Button>
             </DialogFooter>
           </form>

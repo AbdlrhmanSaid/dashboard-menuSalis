@@ -54,15 +54,15 @@ export default function ProductItem({
 
       {/* Product Info */}
       <div className="flex-1 min-w-0 space-y-1">
-        <div className="flex items-center justify-between gap-2">
-          <h4 className="text-sm font-bold text-slate-800 truncate">{cleanedName}</h4>
+        <div className="flex items-start justify-between gap-2">
+          <h4 className="text-sm font-bold text-slate-800">{cleanedName}</h4>
           
           <span className="text-sm font-bold text-red-600 shrink-0">
             {price ? `${price} ج.م` : "—"}
           </span>
         </div>
 
-        <p className="text-xs text-slate-400 font-medium truncate max-w-[280px]">
+        <p className="text-xs text-slate-400 font-medium line-clamp-2">
           {cleanedDescription || "لا يوجد وصف لهذا المنتج."}
         </p>
 

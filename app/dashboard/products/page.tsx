@@ -16,9 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  updateProductBranches,
-} from "@/services/productService";
+import { updateProductBranches } from "@/services/productService";
 import {
   Table,
   TableBody,
@@ -53,7 +51,7 @@ import {
   CommandList,
   CommandEmpty,
 } from "@/components/ui/command";
-import { Edit2, Trash2, Check, X, Plus, Eye, Search } from "lucide-react";
+import { Edit2, Trash2, Plus, Eye, Search } from "lucide-react";
 import { useForm } from "react-hook-form";
 import Loading from "@/components/Loading";
 import { CreateProductRequest, Product } from "@/types/product";
@@ -94,14 +92,22 @@ export default function ProductsManage() {
   const isAdmin = user?.role === "admin";
 
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   // Filters state
   const [filterCompanyId, setFilterCompanyId] = useState("");
   const [filterMenuId, setFilterMenuId] = useState("");
   const [filterBranchId, setFilterBranchId] = useState("");
 
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
-  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editMenuSearch, setEditMenuSearch] = useState("");
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editProductImageUrl, setEditProductImageUrl] = useState<string>("");
+  const [prevEditingCompanyId, setPrevEditingCompanyId] = useState<string>("");
+
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(
+    null,
+  );
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState<string>("");
   const [menuSearch, setMenuSearch] = useState("");
@@ -111,7 +117,8 @@ export default function ProductsManage() {
   // For editing product branches
   const [editingBranches, setEditingBranches] = useState<string[]>([]);
   const [editingMenuId, setEditingMenuId] = useState<string>("");
-  const [isEditBranchesDialogOpen, setIsEditBranchesDialogOpen] = useState(false);
+  const [isEditBranchesDialogOpen, setIsEditBranchesDialogOpen] =
+    useState(false);
   const [currentEditingProduct, setCurrentEditingProduct] = useState<{
     _id: string;
     name: string;
@@ -145,7 +152,8 @@ export default function ProductsManage() {
 
   const editingCompanyId = editingMenuData?.company?._id;
   const { data: editingCompanyData } = useCompany(editingCompanyId || "");
-  const editingCompanySlug = (editingCompanyData as { slug?: string })?.slug || "";
+  const editingCompanySlug =
+    (editingCompanyData as { slug?: string })?.slug || "";
   const { data: editingBranchesData, isFetching: editingBranchesFetching } =
     useBranchesByCompanySlug(editingCompanySlug);
 
@@ -187,9 +195,10 @@ export default function ProductsManage() {
     const map = new Map<string, Set<string>>();
     if (!menus) return map;
     for (const m of menus) {
-      const companyId = typeof m.company === "string"
-        ? m.company
-        : (m.company as { _id?: string })?._id?.toString?.() ?? "";
+      const companyId =
+        typeof m.company === "string"
+          ? m.company
+          : ((m.company as { _id?: string })?._id?.toString?.() ?? "");
       if (!companyId) continue;
       if (!map.has(companyId)) map.set(companyId, new Set());
       map.get(companyId)!.add((m._id as string).toString());
@@ -200,10 +209,14 @@ export default function ProductsManage() {
   const filteredProducts = useMemo(() => {
     const productsArray = Array.isArray(products) ? products : [];
     return productsArray.filter((product: Product) => {
-      const matchesSearch = product.name?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = product.name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase());
 
       // Menu id from product (always a string from API)
-      const productMenuId = (product.menu as { _id?: string })?._id?.toString?.() ?? String(product.menu ?? "");
+      const productMenuId =
+        (product.menu as { _id?: string })?._id?.toString?.() ??
+        String(product.menu ?? "");
 
       // Company filter — use menus map to find which company owns this menu
       let matchesCompany = true;
@@ -219,30 +232,42 @@ export default function ProductsManage() {
       const matchesBranch =
         !filterBranchId ||
         product.availableBranches?.some(
-          (b) => ((b as { _id?: string })?._id?.toString?.() ?? String(b)) === filterBranchId
+          (b) =>
+            ((b as { _id?: string })?._id?.toString?.() ?? String(b)) ===
+            filterBranchId,
         );
 
       return matchesSearch && matchesCompany && matchesMenu && matchesBranch;
     });
-  }, [products, searchTerm, filterCompanyId, filterMenuId, filterBranchId, menuIdsByCompany]);
+  }, [
+    products,
+    searchTerm,
+    filterCompanyId,
+    filterMenuId,
+    filterBranchId,
+    menuIdsByCompany,
+  ]);
 
   // Reset menu and branch filters if company changes and current selection is no longer valid
   useEffect(() => {
     if (filterCompanyId) {
       if (filterMenuId) {
         const menuObj = menus?.find((m) => m._id === filterMenuId);
-        const menuCompanyId = typeof menuObj?.company === "string"
-          ? menuObj.company
-          : (menuObj?.company as { _id?: string })?._id?.toString?.() ?? "";
+        const menuCompanyId =
+          typeof menuObj?.company === "string"
+            ? menuObj.company
+            : ((menuObj?.company as { _id?: string })?._id?.toString?.() ?? "");
         if (menuCompanyId !== filterCompanyId) {
           setFilterMenuId("");
         }
       }
       if (filterBranchId) {
         const branchObj = allBranches?.find((b) => b._id === filterBranchId);
-        const branchCompanyId = typeof branchObj?.company === "string"
-          ? branchObj.company
-          : (branchObj?.company as { _id?: string })?._id?.toString?.() ?? "";
+        const branchCompanyId =
+          typeof branchObj?.company === "string"
+            ? branchObj.company
+            : ((branchObj?.company as { _id?: string })?._id?.toString?.() ??
+              "");
         if (branchCompanyId !== filterCompanyId) {
           setFilterBranchId("");
         }
@@ -253,9 +278,16 @@ export default function ProductsManage() {
   const filteredMenus = useMemo(() => {
     if (!menus || !Array.isArray(menus)) return [];
     return menus.filter((menu: Menu) =>
-      menu.name.toLowerCase().includes(menuSearch.toLowerCase())
+      menu.name.toLowerCase().includes(menuSearch.toLowerCase()),
     );
   }, [menus, menuSearch]);
+
+  const filteredEditMenus = useMemo(() => {
+    if (!menus || !Array.isArray(menus)) return [];
+    return menus.filter((menu: Menu) =>
+      menu.name.toLowerCase().includes(editMenuSearch.toLowerCase()),
+    );
+  }, [menus, editMenuSearch]);
 
   // Reset branches when menu changes
   useEffect(() => {
@@ -265,20 +297,26 @@ export default function ProductsManage() {
     }
   }, [selectedMenu, setValueCreate]);
 
-  const startEditing = (product: {
-    _id: string;
-    name: string;
-    description: string;
-    price?: number;
-    menu: { _id: string; name: string };
-    availableBranches: Array<{ _id: string; name: string }>;
-  }) => {
+  // Keep track of the previous company ID to detect changes and reset branches if the company changes during editing
+  useEffect(() => {
+    if (editingCompanyId) {
+      if (prevEditingCompanyId && prevEditingCompanyId !== editingCompanyId) {
+        setEditingBranches([]);
+        setValue("availableBranches", []);
+      }
+      setPrevEditingCompanyId(editingCompanyId);
+    }
+  }, [editingCompanyId, prevEditingCompanyId, setValue]);
+
+  const startEditing = (product: Product) => {
     setEditingProductId(product._id);
     setEditingMenuId(product.menu._id);
+    setEditMenuSearch(product.menu.name);
+    setEditProductImageUrl(product.image?.url || "");
     setEditingBranches(
       product.availableBranches?.map(
-        (branch: { _id: string; name: string }) => branch._id
-      ) || []
+        (branch: { _id: string; name: string }) => branch._id,
+      ) || [],
     );
 
     reset({
@@ -288,17 +326,21 @@ export default function ProductsManage() {
       menuId: product.menu._id,
       availableBranches: product.availableBranches.map((b) => b._id),
     });
+    setIsEditDialogOpen(true);
   };
 
   const cancelEditing = () => {
+    setIsEditDialogOpen(false);
     setEditingProductId(null);
     setEditingBranches([]);
     setEditingMenuId("");
+    setEditImageFile(null);
+    setEditProductImageUrl("");
+    setPrevEditingCompanyId("");
     reset();
   };
 
   const onSubmit = (data: ProductFormData, productId: string) => {
-    const imageFile = data.image && data.image[0] ? data.image[0] : null;
     updateProduct(
       {
         id: productId,
@@ -310,14 +352,18 @@ export default function ProductsManage() {
           availableBranches: editingBranches,
           userId: user?.id,
           userName: user?.username,
-          imageFile,
+          imageFile: editImageFile,
         },
       },
       {
         onSuccess: async () => {
+          setIsEditDialogOpen(false);
           setEditingProductId(null);
           setEditingBranches([]);
           setEditingMenuId("");
+          setEditImageFile(null);
+          setEditProductImageUrl("");
+          setPrevEditingCompanyId("");
           reset();
           await refetchProducts();
           toast.success("تم تحديث المنتج بنجاح");
@@ -326,7 +372,7 @@ export default function ProductsManage() {
           console.error("Error updating product:", error);
           toast.error("فشل في تحديث المنتج");
         },
-      }
+      },
     );
   };
 
@@ -364,7 +410,7 @@ export default function ProductsManage() {
                   await refetchProducts();
                   toast.success("تم إنشاء المنتج بنجاح");
                 },
-              }
+              },
             );
           } else {
             setIsCreateDialogOpen(false);
@@ -381,7 +427,7 @@ export default function ProductsManage() {
           console.error("Error creating product:", error);
           toast.error("فشل في إنشاء المنتج");
         },
-      }
+      },
     );
   };
 
@@ -427,7 +473,7 @@ export default function ProductsManage() {
     setEditingMenuId(product.menu._id);
     const currentBranches =
       product.availableBranches?.map(
-        (branch: { _id: string; name: string }) => branch._id
+        (branch: { _id: string; name: string }) => branch._id,
       ) || [];
 
     setEditingBranches(currentBranches);
@@ -442,7 +488,7 @@ export default function ProductsManage() {
         currentEditingProduct._id,
         editingBranches,
         user.id,
-        user.username
+        user.username,
       );
 
       setIsEditBranchesDialogOpen(false);
@@ -467,7 +513,13 @@ export default function ProductsManage() {
     setValue("availableBranches", editingBranches);
   }, [editingBranches, setValue]);
 
-  if (!mounted || productsLoading || menusLoading || companiesLoading || branchesLoading) {
+  if (
+    !mounted ||
+    productsLoading ||
+    menusLoading ||
+    companiesLoading ||
+    branchesLoading
+  ) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loading />
@@ -558,7 +610,10 @@ export default function ProductsManage() {
           </select>
 
           {/* Reset Filters Button */}
-          {(filterCompanyId || filterMenuId || filterBranchId || searchTerm) && (
+          {(filterCompanyId ||
+            filterMenuId ||
+            filterBranchId ||
+            searchTerm) && (
             <Button
               variant="ghost"
               onClick={() => {
@@ -580,210 +635,130 @@ export default function ProductsManage() {
         <Table className="min-w-[950px]">
           <TableHeader className="bg-slate-50/70">
             <TableRow>
-              <TableHead className="font-bold text-slate-700 text-right">الصورة</TableHead>
-              <TableHead className="font-bold text-slate-700 text-right">اسم المنتج</TableHead>
-              <TableHead className="font-bold text-slate-700 text-right">الوصف</TableHead>
-              <TableHead className="font-bold text-slate-700 text-right">السعر</TableHead>
-              <TableHead className="font-bold text-slate-700 text-right">المنيو</TableHead>
-              <TableHead className="font-bold text-slate-700 text-right">الفروع المتاحة</TableHead>
-              <TableHead className="font-bold text-slate-700 text-right">الإجراءات</TableHead>
+              <TableHead className="font-bold text-slate-700 text-right">
+                الصورة
+              </TableHead>
+              <TableHead className="font-bold text-slate-700 text-right">
+                اسم المنتج
+              </TableHead>
+              <TableHead className="font-bold text-slate-700 text-right">
+                الوصف
+              </TableHead>
+              <TableHead className="font-bold text-slate-700 text-right">
+                السعر
+              </TableHead>
+              <TableHead className="font-bold text-slate-700 text-right">
+                المنيو
+              </TableHead>
+              <TableHead className="font-bold text-slate-700 text-right">
+                الفروع المتاحة
+              </TableHead>
+              <TableHead className="font-bold text-slate-700 text-right">
+                الإجراءات
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredProducts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-12 text-center text-slate-400">
+                <TableCell
+                  colSpan={7}
+                  className="py-12 text-center text-slate-400"
+                >
                   لا توجد منتجات مسجلة حالياً.
                 </TableCell>
               </TableRow>
             ) : (
               filteredProducts.map((product: Product) => {
-                const isEditing = editingProductId === product._id;
                 return (
                   <TableRow
                     key={product._id}
-                    className={
-                      isEditing
-                        ? "bg-red-50/20 hover:bg-red-50/30 border-y-2 border-red-100/50 transition-colors duration-150"
-                        : "hover:bg-slate-50/50 transition-colors duration-150"
-                    }
+                    className="hover:bg-slate-50/50 transition-colors duration-150"
                   >
-                    {isEditing ? (
-                      // Inline Editing Row
-                      <>
-                        <TableCell className="align-middle">
-                          <div className="flex items-center gap-3">
-                            {product.image?.url ? (
-                              <Image
-                                width={44}
-                                height={44}
-                                src={product.image.url}
-                                alt={product.name}
-                                className="h-11 w-11 object-cover rounded-xl border border-slate-200 shadow-inner shrink-0"
-                              />
-                            ) : (
-                              <div className="h-11 w-11 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center text-xs font-semibold shrink-0">
-                                لا يوجد
-                              </div>
-                            )}
-                            <div className="flex flex-col gap-1 min-w-[120px]">
-                              <Input
-                                type="file"
-                                accept="image/*"
-                                {...register("image")}
-                                className="h-9 text-xs rounded-xl border-slate-200 bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-medium">تغيير الصورة (اختياري)</span>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="align-middle">
-                          <Input
-                            {...register("name", {
-                              required: "اسم المنتج مطلوب",
-                              minLength: { value: 2, message: "2 أحرف على الأقل" },
-                            })}
-                            className="rounded-xl border-slate-200 bg-white focus-visible:ring-red-500 focus-visible:border-red-500 min-w-[120px]"
-                          />
-                          {errors.name && (
-                            <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
-                          )}
-                        </TableCell>
-                        <TableCell className="align-middle">
-                          <textarea
-                            {...register("description", {
-                              required: "الوصف مطلوب",
-                              minLength: { value: 5, message: "5 أحرف على الأقل" },
-                            })}
-                            className="min-h-[70px] w-full rounded-xl border border-slate-200 bg-white p-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 min-w-[180px]"
-                          />
-                          {errors.description && (
-                            <p className="mt-1 text-xs text-red-500">{errors.description.message}</p>
-                          )}
-                        </TableCell>
-                        <TableCell className="align-middle">
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            {...register("price", {
-                              min: { value: 0, message: "السعر يجب أن يكون أكبر من 0" },
-                            })}
-                            className="rounded-xl border-slate-200 bg-white focus-visible:ring-red-500 focus-visible:border-red-500 max-w-[80px]"
-                          />
-                          {errors.price && (
-                            <p className="mt-1 text-xs text-red-500">{errors.price.message}</p>
-                          )}
-                        </TableCell>
-                        <TableCell className="align-middle text-slate-700 font-medium">
-                          {product.menu?.name || "غير محدد"}
-                        </TableCell>
-                        <TableCell className="align-middle text-slate-500 font-semibold">
-                          {editingBranches.length} فروع
-                        </TableCell>
-                        <TableCell className="align-middle">
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              disabled={isUpdating}
-                              onClick={handleSubmit((data) => onSubmit(data, product._id))}
-                              className="h-9 w-9 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 shadow-sm border border-green-100"
-                              title="حفظ"
-                            >
-                              <Check className="h-5 w-5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              disabled={isUpdating}
-                              onClick={cancelEditing}
-                              className="h-9 w-9 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 shadow-sm border border-red-100"
-                              title="إلغاء"
-                            >
-                              <X className="h-5 w-5" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </>
-                    ) : (
-                    // Read-only Row
-                    <>
-                      <TableCell>
-                        {product.image?.url ? (
-                          <Image
-                            width={44}
-                            height={44}
-                            src={product.image.url}
-                            alt={product.name}
-                            className="h-11 w-11 object-cover rounded-xl border border-slate-100 shadow-inner"
-                          />
-                        ) : (
-                          <div className="h-11 w-11 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center text-xs font-semibold">
-                            لا يوجد
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-semibold text-slate-800">{product.name}</TableCell>
-                      <TableCell className="text-slate-500 max-w-[200px] truncate" title={product.description}>
-                        {product.description}
-                      </TableCell>
-                      <TableCell className="font-semibold text-slate-900">
-                        {product.price ? `${product.price} ج.م` : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">
-                          {product.menu?.name || "غير محدد"}
-                        </span>
-                      </TableCell>
-                      <TableCell>
+                    <TableCell>
+                      {product.image?.url ? (
+                        <Image
+                          width={44}
+                          height={44}
+                          src={product.image.url}
+                          alt={product.name}
+                          className="h-11 w-11 object-cover rounded-xl border border-slate-100 shadow-inner"
+                        />
+                      ) : (
+                        <div className="h-11 w-11 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center text-xs font-semibold">
+                          لا يوجد
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-semibold text-slate-800">
+                      {product.name}
+                    </TableCell>
+                    <TableCell
+                      className="text-slate-500 max-w-[200px] truncate"
+                      title={product.description}
+                    >
+                      {product.description}
+                    </TableCell>
+                    <TableCell className="font-semibold text-slate-900">
+                      {product.price ? `${product.price} ج.م` : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">
+                        {product.menu?.name || "غير محدد"}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        onClick={() =>
+                          (isSupervisor || isAdmin) &&
+                          openEditBranchesDialog(product)
+                        }
+                        className="h-7 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 text-xs px-2.5 border border-slate-200"
+                      >
+                        {product.availableBranches?.length || 0} فرع
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
                         <Button
                           variant="ghost"
-                          onClick={() => (isSupervisor || isAdmin) && openEditBranchesDialog(product)}
-                          className="h-7 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 text-xs px-2.5 border border-slate-200"
+                          size="icon"
+                          onClick={() =>
+                            window.open(`/product/${product._id}`, "_blank")
+                          }
+                          className="h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                          title="عرض صفحة المنتج"
                         >
-                          {product.availableBranches?.length || 0} فرع
+                          <Eye className="h-4 w-4" />
                         </Button>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => window.open(`/product/${product._id}`, "_blank")}
-                            className="h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                            title="عرض صفحة المنتج"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {isSupervisor && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => startEditing(product)}
-                                className="h-8 w-8 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                                title="تعديل المنتج"
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setDeletingProductId(product._id)}
-                                className="h-8 w-8 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700"
-                                title="حذف المنتج"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
-                    </>
-                  )}
-                </TableRow>
-              ); })
+                        {isSupervisor && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => startEditing(product)}
+                              className="h-8 w-8 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                              title="تعديل المنتج"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeletingProductId(product._id)}
+                              className="h-8 w-8 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700"
+                              title="حذف المنتج"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -793,15 +768,25 @@ export default function ProductsManage() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-lg rounded-2xl bg-white p-6 max-h-[85vh] overflow-y-auto">
           <DialogHeader className="text-right">
-            <DialogTitle className="text-xl font-bold text-slate-900">إضافة منتج جديد</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-slate-900">
+              إضافة منتج جديد
+            </DialogTitle>
             <DialogDescription className="text-sm text-slate-500">
               أدخل تفاصيل وجبة أو منتج جديد واربطه بالقائمة والفروع المحددة.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmitCreate(onCreateSubmit)} className="space-y-4 mt-2">
+          <form
+            onSubmit={handleSubmitCreate(onCreateSubmit)}
+            className="space-y-4 mt-2"
+          >
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="createName" className="font-semibold text-slate-700">اسم المنتج</Label>
+              <Label
+                htmlFor="createName"
+                className="font-semibold text-slate-700"
+              >
+                اسم المنتج
+              </Label>
               <Input
                 id="createName"
                 {...registerCreate("name", {
@@ -813,12 +798,19 @@ export default function ProductsManage() {
                 className="rounded-xl border-slate-200"
               />
               {createErrors.name && (
-                <p className="text-xs text-red-500">{createErrors.name.message}</p>
+                <p className="text-xs text-red-500">
+                  {createErrors.name.message}
+                </p>
               )}
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="createDescription" className="font-semibold text-slate-700">الوصف</Label>
+              <Label
+                htmlFor="createDescription"
+                className="font-semibold text-slate-700"
+              >
+                الوصف
+              </Label>
               <textarea
                 id="createDescription"
                 {...registerCreate("description", {
@@ -830,12 +822,19 @@ export default function ProductsManage() {
                 className="min-h-20 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm focus:outline-none"
               />
               {createErrors.description && (
-                <p className="text-xs text-red-500">{createErrors.description.message}</p>
+                <p className="text-xs text-red-500">
+                  {createErrors.description.message}
+                </p>
               )}
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="createPrice" className="font-semibold text-slate-700">السعر (اختياري)</Label>
+              <Label
+                htmlFor="createPrice"
+                className="font-semibold text-slate-700"
+              >
+                السعر (اختياري)
+              </Label>
               <Input
                 id="createPrice"
                 type="number"
@@ -851,7 +850,12 @@ export default function ProductsManage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="createMenu" className="font-semibold text-slate-700">المنيو</Label>
+              <Label
+                htmlFor="createMenu"
+                className="font-semibold text-slate-700"
+              >
+                المنيو
+              </Label>
               <Command className="border rounded-xl bg-white">
                 <CommandInput
                   placeholder="ابحث عن منيو لربطه..."
@@ -884,39 +888,47 @@ export default function ProductsManage() {
 
             {menuSearch && selectedMenu && (
               <div className="space-y-2 border border-slate-100 rounded-xl p-3 bg-slate-50/50">
-                <div className="flex items-center justify-between">
-                  <Label className="font-semibold text-slate-700">الفروع المتاحة</Label>
-                  {!branchesFetching && Array.isArray(branches) && branches.length > 0 && (
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const allIds = (branches as Branch[]).map((b) => b._id);
-                          setSelectedBranches(allIds);
-                          setValueCreate("availableBranches", allIds);
-                        }}
-                        disabled={isCreating}
-                        className="h-7 text-xs rounded-lg"
-                      >
-                        اختر الكل
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedBranches([]);
-                          setValueCreate("availableBranches", []);
-                        }}
-                        disabled={isCreating}
-                        className="h-7 text-xs rounded-lg"
-                      >
-                        إلغاء الكل
-                      </Button>
-                    </div>
-                  )}
+                <div className="flex flex-col items-center justify-between">
+                  <Label className="block font-semibold text-slate-700">
+                    الفروع المتاحة
+                  </Label>
+                  <div>
+                    {!branchesFetching &&
+                      Array.isArray(branches) &&
+                      branches.length > 0 && (
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const allIds = (branches as Branch[]).map(
+                                (b) => b._id,
+                              );
+                              setSelectedBranches(allIds);
+                              setValueCreate("availableBranches", allIds);
+                            }}
+                            disabled={isCreating}
+                            className="h-7 text-xs rounded-lg"
+                          >
+                            اختر الكل
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedBranches([]);
+                              setValueCreate("availableBranches", []);
+                            }}
+                            disabled={isCreating}
+                            className="h-7 text-xs rounded-lg"
+                          >
+                            إلغاء الكل
+                          </Button>
+                        </div>
+                      )}
+                  </div>
                 </div>
 
                 {branchesFetching ? (
@@ -924,7 +936,10 @@ export default function ProductsManage() {
                 ) : Array.isArray(branches) && branches.length > 0 ? (
                   <div className="space-y-2 max-h-32 overflow-y-auto border border-slate-200 rounded-lg p-2.5 bg-white">
                     {branches.map((branch: Branch) => (
-                      <div key={branch._id} className="flex items-center space-x-2 space-x-reverse">
+                      <div
+                        key={branch._id}
+                        className="flex items-center space-x-2 space-x-reverse"
+                      >
                         <Checkbox
                           id={branch._id}
                           checked={selectedBranches.includes(branch._id)}
@@ -933,20 +948,30 @@ export default function ProductsManage() {
                           }
                           disabled={isCreating}
                         />
-                        <Label htmlFor={branch._id} className="text-sm font-normal text-slate-700 cursor-pointer">
+                        <Label
+                          htmlFor={branch._id}
+                          className="text-sm font-normal text-slate-700 cursor-pointer"
+                        >
                           {branch.name}
                         </Label>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-xs text-slate-400">لا توجد فروع مسجلة لهذه الشركة.</div>
+                  <div className="text-xs text-slate-400">
+                    لا توجد فروع مسجلة لهذه الشركة.
+                  </div>
                 )}
               </div>
             )}
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="createImage" className="font-semibold text-slate-700">صورة المنتج</Label>
+              <Label
+                htmlFor="createImage"
+                className="font-semibold text-slate-700"
+              >
+                صورة المنتج
+              </Label>
               <Input
                 id="createImage"
                 type="file"
@@ -989,11 +1014,293 @@ export default function ProductsManage() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Product Modal */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-3xl rounded-2xl bg-white p-6 max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="text-right">
+            <DialogTitle className="text-xl font-bold text-slate-900">
+              تعديل المنتج
+            </DialogTitle>
+            <DialogDescription className="text-sm text-slate-500">
+              تعديل تفاصيل المنتج وصورته وقائمة الطعام والفروع المتاحة.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form
+            onSubmit={handleSubmit(
+              (data) => editingProductId && onSubmit(data, editingProductId),
+            )}
+            className="space-y-4 mt-4"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Right column: General Info & Image */}
+              <div className="space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label
+                    htmlFor="editName"
+                    className="font-semibold text-slate-700"
+                  >
+                    اسم المنتج
+                  </Label>
+                  <Input
+                    id="editName"
+                    {...register("name", {
+                      required: "اسم المنتج مطلوب",
+                      minLength: { value: 2, message: "2 أحرف على الأقل" },
+                    })}
+                    placeholder="أدخل اسم المنتج"
+                    disabled={isUpdating}
+                    className="rounded-xl border-slate-200"
+                  />
+                  {errors.name && (
+                    <p className="text-xs text-red-500">
+                      {errors.name.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label
+                    htmlFor="editPrice"
+                    className="font-semibold text-slate-700"
+                  >
+                    السعر (اختياري)
+                  </Label>
+                  <Input
+                    id="editPrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    {...register("price", {
+                      min: { value: 0, message: "السعر يجب أن يكون 0 أو أكثر" },
+                    })}
+                    placeholder="السعر"
+                    disabled={isUpdating}
+                    className="rounded-xl border-slate-200"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label className="font-semibold text-slate-700">
+                    صورة المنتج
+                  </Label>
+                  <div className="flex gap-4 items-center">
+                    {editProductImageUrl ? (
+                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+                        <Image
+                          fill
+                          src={editProductImageUrl}
+                          alt="Product preview"
+                          className="object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-20 w-20 shrink-0 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center text-[10px] font-semibold border border-slate-200">
+                        لا يوجد صورة
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <Input
+                        id="editImage"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          setEditImageFile(file);
+                          if (file) {
+                            setEditProductImageUrl(URL.createObjectURL(file));
+                          }
+                        }}
+                        disabled={isUpdating}
+                        className="rounded-xl border-slate-200 text-xs"
+                      />
+                      <span className="text-[10px] text-slate-400 block mt-1">
+                        اختر ملفاً لتغيير الصورة الحالية
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label
+                    htmlFor="editMenu"
+                    className="font-semibold text-slate-700"
+                  >
+                    المنيو
+                  </Label>
+                  <Command className="border rounded-xl bg-white shadow-sm">
+                    <CommandInput
+                      placeholder="ابحث عن منيو لربطه..."
+                      value={editMenuSearch}
+                      onValueChange={setEditMenuSearch}
+                      disabled={isUpdating}
+                    />
+                    <CommandList className="max-h-[150px]">
+                      <CommandEmpty>لا توجد قوائم طعام</CommandEmpty>
+                      <CommandGroup>
+                        {filteredEditMenus.map((menu: Menu) => (
+                          <CommandItem
+                            key={menu._id}
+                            onSelect={() => {
+                              setEditingMenuId(menu._id);
+                              setValue("menuId", menu._id);
+                              setEditMenuSearch(
+                                `${menu.name} - ${menu.company.name}`,
+                              );
+                            }}
+                            className="text-right justify-start cursor-pointer hover:bg-slate-50"
+                          >
+                            {menu.name} - {menu.company.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                  {errors.menuId && (
+                    <p className="text-xs text-red-500">اختيار المنيو مطلوب</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Left column: Description & Branches */}
+              <div className="space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label
+                    htmlFor="editDescription"
+                    className="font-semibold text-slate-700"
+                  >
+                    الوصف
+                  </Label>
+                  <textarea
+                    id="editDescription"
+                    {...register("description", {
+                      required: "الوصف مطلوب",
+                      minLength: { value: 5, message: "5 أحرف على الأقل" },
+                    })}
+                    placeholder="أدخل مكونات أو تفاصيل الطبق..."
+                    disabled={isUpdating}
+                    className="min-h-[110px] w-full rounded-xl border border-slate-200 bg-white p-3 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                  />
+                  {errors.description && (
+                    <p className="text-xs text-red-500">
+                      {errors.description.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2 border border-slate-100 rounded-xl p-4 bg-slate-50/50">
+                  <div className="flex flex-col gap-2 items-center justify-between">
+                    <Label className="font-semibold text-slate-700">
+                      الفروع المتاحة
+                    </Label>
+                    {!editingBranchesFetching &&
+                      editingBranchesData &&
+                      Array.isArray(editingBranchesData) &&
+                      editingBranchesData.length > 0 && (
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const allIds = editingBranchesData.map(
+                                (b: Branch) => b._id,
+                              );
+                              setEditingBranches(allIds);
+                            }}
+                            disabled={isUpdating}
+                            className="h-7 text-[10px] rounded-lg px-2 bg-white"
+                          >
+                            اختر الكل
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingBranches([])}
+                            disabled={isUpdating}
+                            className="h-7 text-[10px] rounded-lg px-2 bg-white"
+                          >
+                            إلغاء الكل
+                          </Button>
+                        </div>
+                      )}
+                  </div>
+
+                  {editingBranchesFetching ? (
+                    <p className="text-xs text-slate-400 py-4 text-center">
+                      جاري تحميل الفروع...
+                    </p>
+                  ) : editingBranchesData &&
+                    Array.isArray(editingBranchesData) &&
+                    editingBranchesData.length > 0 ? (
+                    <div className="space-y-2 max-h-[140px] overflow-y-auto border border-slate-200 rounded-xl p-2.5 bg-white">
+                      {editingBranchesData.map((branch: Branch) => (
+                        <div
+                          key={branch._id}
+                          className="flex items-center space-x-2 space-x-reverse gap-1"
+                        >
+                          <Checkbox
+                            id={`edit-branch-${branch._id}`}
+                            checked={editingBranches.includes(branch._id)}
+                            onCheckedChange={(checked) =>
+                              handleEditingBranchToggle(
+                                branch._id,
+                                checked as boolean,
+                              )
+                            }
+                            disabled={isUpdating}
+                          />
+                          <Label
+                            htmlFor={`edit-branch-${branch._id}`}
+                            className="text-sm font-normal text-slate-700 cursor-pointer select-none"
+                          >
+                            {branch.name}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-slate-400 py-4 text-center">
+                      لا توجد فروع مسجلة لهذه الشركة.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="flex gap-2 justify-start mt-6 border-t border-slate-100 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={cancelEditing}
+                disabled={isUpdating}
+                className="rounded-xl border-slate-200"
+              >
+                إلغاء
+              </Button>
+              <Button
+                type="submit"
+                disabled={isUpdating}
+                className="rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold"
+              >
+                {isUpdating ? "جاري الحفظ..." : "حفظ التغييرات"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Edit Branches Modal */}
-      <Dialog open={isEditBranchesDialogOpen} onOpenChange={setIsEditBranchesDialogOpen}>
+      <Dialog
+        open={isEditBranchesDialogOpen}
+        onOpenChange={setIsEditBranchesDialogOpen}
+      >
         <DialogContent className="max-w-md rounded-2xl bg-white p-6 max-h-[80vh] overflow-y-auto">
           <DialogHeader className="text-right">
-            <DialogTitle className="text-xl font-bold text-slate-900">تعديل الفروع المتاحة</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-slate-900">
+              تعديل الفروع المتاحة
+            </DialogTitle>
             <DialogDescription className="text-sm text-slate-500">
               اختر الفروع التي ترغب في عرض المنتج بها في المنيو.
             </DialogDescription>
@@ -1001,17 +1308,23 @@ export default function ProductsManage() {
 
           {editingBranchesFetching ? (
             <div className="py-4 text-sm text-slate-400">جاري التحميل...</div>
-          ) : editingBranchesData && Array.isArray(editingBranchesData) && editingBranchesData.length > 0 ? (
+          ) : editingBranchesData &&
+            Array.isArray(editingBranchesData) &&
+            editingBranchesData.length > 0 ? (
             <div className="space-y-4 mt-2">
               <div className="flex items-center justify-between">
-                <Label className="font-semibold text-slate-700">قائمة الفروع</Label>
+                <Label className="font-semibold text-slate-700">
+                  قائمة الفروع
+                </Label>
                 <div className="flex gap-2">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const allIds = editingBranchesData.map((b: Branch) => b._id);
+                      const allIds = editingBranchesData.map(
+                        (b: Branch) => b._id,
+                      );
                       setEditingBranches(allIds);
                     }}
                     className="h-7 text-xs rounded-lg"
@@ -1032,15 +1345,24 @@ export default function ProductsManage() {
 
               <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-200 rounded-xl p-3 bg-white">
                 {editingBranchesData.map((branch: Branch) => (
-                  <div key={branch._id} className="flex items-center space-x-2 space-x-reverse">
+                  <div
+                    key={branch._id}
+                    className="flex items-center space-x-2 space-x-reverse"
+                  >
                     <Checkbox
                       id={`edit-${branch._id}`}
                       checked={editingBranches.includes(branch._id)}
                       onCheckedChange={(checked) =>
-                        handleEditingBranchToggle(branch._id, checked as boolean)
+                        handleEditingBranchToggle(
+                          branch._id,
+                          checked as boolean,
+                        )
                       }
                     />
-                    <Label htmlFor={`edit-${branch._id}`} className="text-sm font-normal text-slate-700 cursor-pointer">
+                    <Label
+                      htmlFor={`edit-${branch._id}`}
+                      className="text-sm font-normal text-slate-700 cursor-pointer"
+                    >
                       {branch.name}
                     </Label>
                   </div>
@@ -1048,7 +1370,9 @@ export default function ProductsManage() {
               </div>
             </div>
           ) : (
-            <div className="py-6 text-center text-slate-400 text-sm">لا توجد فروع مسجلة لهذه الشركة.</div>
+            <div className="py-6 text-center text-slate-400 text-sm">
+              لا توجد فروع مسجلة لهذه الشركة.
+            </div>
           )}
 
           <DialogFooter className="flex gap-2 justify-start mt-6 border-t border-slate-100 pt-4">
@@ -1065,7 +1389,10 @@ export default function ProductsManage() {
             >
               إلغاء
             </Button>
-            <Button onClick={saveBranchesChanges} className="rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold">
+            <Button
+              onClick={saveBranchesChanges}
+              className="rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold"
+            >
               حفظ التغييرات
             </Button>
           </DialogFooter>
@@ -1073,19 +1400,32 @@ export default function ProductsManage() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deletingProductId} onOpenChange={(open) => !open && setDeletingProductId(null)}>
+      <AlertDialog
+        open={!!deletingProductId}
+        onOpenChange={(open) => !open && setDeletingProductId(null)}
+      >
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader className="text-right">
-            <AlertDialogTitle className="text-lg font-bold text-slate-900">تأكيد الحذف</AlertDialogTitle>
+            <AlertDialogTitle className="text-lg font-bold text-slate-900">
+              تأكيد الحذف
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500">
-              هل أنت متأكد من حذف هذا المنتج نهائياً؟ هذا الإجراء لا يمكن التراجع عنه.
+              هل أنت متأكد من حذف هذا المنتج نهائياً؟ هذا الإجراء لا يمكن
+              التراجع عنه.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex gap-2 justify-start mt-4">
-            <AlertDialogCancel onClick={() => setDeletingProductId(null)} className="rounded-xl">إلغاء</AlertDialogCancel>
+            <AlertDialogCancel
+              onClick={() => setDeletingProductId(null)}
+              className="rounded-xl"
+            >
+              إلغاء
+            </AlertDialogCancel>
             <AlertDialogAction
               disabled={isDeleting}
-              onClick={() => deletingProductId && confirmDelete(deletingProductId)}
+              onClick={() =>
+                deletingProductId && confirmDelete(deletingProductId)
+              }
               className="rounded-xl bg-red-600 hover:bg-red-700 text-white"
             >
               {isDeleting ? "جاري الحذف..." : "حذف"}

@@ -43,7 +43,7 @@ export default function Header() {
 
   const getRoleLabel = (role?: string) => {
     if (role === "supervisor") return "مدير النظام";
-    if (role === "admin") return "مشرف الفرع";
+    if (role === "admin") return "مشرف";
     return "مستخدم";
   };
 

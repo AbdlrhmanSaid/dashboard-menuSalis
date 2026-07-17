@@ -38,7 +38,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import toast from "react-hot-toast";
-import { Edit2, Trash2, Check, X, Plus, Search } from "lucide-react";
+import { Edit2, Trash2, Plus, Search } from "lucide-react";
 import { useForm } from "react-hook-form";
 import Loading from "@/components/Loading";
 import { Company } from "@/types/company";
@@ -71,6 +71,7 @@ export default function CompanyDashboard() {
   const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null);
   const [deletingCompanyId, setDeletingCompanyId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
   const {
     register,
@@ -102,9 +103,11 @@ export default function CompanyDashboard() {
     setValue("name", company.name);
     setValue("slug", company.slug);
     setValue("description", company.description);
+    setIsEditDialogOpen(true);
   };
 
   const cancelEditing = () => {
+    setIsEditDialogOpen(false);
     setEditingCompanyId(null);
     reset();
   };
@@ -124,6 +127,7 @@ export default function CompanyDashboard() {
         },
         {
           onSuccess: () => {
+            setIsEditDialogOpen(false);
             setEditingCompanyId(null);
             reset();
             toast.success("تم تحديث الشركة بنجاح");
@@ -234,147 +238,57 @@ export default function CompanyDashboard() {
               </TableRow>
             ) : (
               filteredCompanies.map((company: Company) => {
-                const isEditing = editingCompanyId === company._id;
                 return (
                   <TableRow
                     key={company._id}
-                    className={
-                      isEditing
-                        ? "bg-red-50/20 hover:bg-red-50/30 border-y-2 border-red-100/50 transition-colors duration-150"
-                        : "hover:bg-slate-50/50 transition-colors duration-150"
-                    }
+                    className="hover:bg-slate-50/50 transition-colors duration-150"
                   >
-                    {isEditing ? (
-                      // Inline Edit row
-                      <>
-                        <TableCell className="align-middle">
-                          <div className="flex items-center gap-3">
-                            {company.logo ? (
-                              <Image
-                                width={44}
-                                height={44}
-                                src={company.logo}
-                                alt={company.name}
-                                className="h-11 w-11 object-cover rounded-xl border border-slate-200 shadow-inner shrink-0"
-                              />
-                            ) : (
-                              <div className="h-11 w-11 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center text-xs font-semibold shrink-0">
-                                لا يوجد
-                              </div>
-                            )}
-                            <div className="flex flex-col gap-1 min-w-[120px]">
-                              <Input
-                                type="file"
-                                accept="image/*"
-                                {...register("logo")}
-                                className="h-9 text-xs rounded-xl border-slate-200 bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-medium">تغيير الشعار (اختياري)</span>
-                            </div>
-                          </div>
-                          {errors.logo && (
-                            <p className="mt-1 text-xs text-red-500">{errors.logo.message}</p>
-                          )}
-                        </TableCell>
-                        <TableCell className="align-middle">
-                          <Input
-                            {...register("name", {
-                              required: "اسم الشركة مطلوب",
-                              minLength: { value: 2, message: "2 أحرف على الأقل" },
-                            })}
-                            className="rounded-xl border-slate-200 bg-white focus-visible:ring-red-500 focus-visible:border-red-500"
-                          />
-                          {errors.name && (
-                            <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
-                          )}
-                        </TableCell>
-                        <TableCell className="align-middle">
-                          <Input
-                            {...register("description", {
-                              required: "الوصف مطلوب",
-                              minLength: { value: 5, message: "5 أحرف على الأقل" },
-                            })}
-                            className="rounded-xl border-slate-200 bg-white focus-visible:ring-red-500 focus-visible:border-red-500 min-w-[200px]"
-                          />
-                          {errors.description && (
-                            <p className="mt-1 text-xs text-red-500">{errors.description.message}</p>
-                          )}
-                        </TableCell>
-                        <TableCell className="align-middle">
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              disabled={isUpdating}
-                              onClick={handleSubmit((data) => onSubmit(data, company._id))}
-                              className="h-9 w-9 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 shadow-sm border border-green-100"
-                              title="حفظ"
-                            >
-                              <Check className="h-5 w-5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              disabled={isUpdating}
-                              onClick={cancelEditing}
-                              className="h-9 w-9 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 shadow-sm border border-red-100"
-                              title="إلغاء"
-                            >
-                              <X className="h-5 w-5" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </>
-                    ) : (
-                    // Regular Display row
-                    <>
-                      <TableCell>
-                        {company.logo ? (
-                          <Image
-                            width={44}
-                            height={44}
-                            src={company.logo}
-                            alt={company.name}
-                            className="h-11 w-11 object-cover rounded-xl border border-slate-100 shadow-inner"
-                          />
-                        ) : (
-                          <div className="h-11 w-11 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center text-xs font-semibold">
-                            لا يوجد
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-semibold text-slate-800">{company.name}</TableCell>
-                      <TableCell className="text-slate-500 max-w-[300px] truncate" title={company.description}>
-                        {company.description}
-                      </TableCell>
-                      {isSupervisor && (
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => startEditing(company)}
-                              className="h-8 w-8 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                              title="تعديل الشركة"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeletingCompanyId(company._id)}
-                              className="h-8 w-8 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700"
-                              title="حذف الشركة"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                    <TableCell>
+                      {company.logo ? (
+                        <Image
+                          width={44}
+                          height={44}
+                          src={company.logo}
+                          alt={company.name}
+                          className="h-11 w-11 object-cover rounded-xl border border-slate-100 shadow-inner"
+                        />
+                      ) : (
+                        <div className="h-11 w-11 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center text-xs font-semibold">
+                          لا يوجد
+                        </div>
                       )}
-                    </>
-                  )}
-                </TableRow>
-              ); })
+                    </TableCell>
+                    <TableCell className="font-semibold text-slate-800">{company.name}</TableCell>
+                    <TableCell className="text-slate-500 max-w-[300px] truncate" title={company.description}>
+                      {company.description}
+                    </TableCell>
+                    {isSupervisor && (
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => startEditing(company)}
+                            className="h-8 w-8 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                            title="تعديل الشركة"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeletingCompanyId(company._id)}
+                            className="h-8 w-8 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700"
+                            title="حذف الشركة"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -458,6 +372,87 @@ export default function CompanyDashboard() {
               </Button>
               <Button type="submit" disabled={isCreating} className="rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold">
                 {isCreating ? "جاري الإضافة..." : "إضافة الشركة"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Company Dialog Modal */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md rounded-2xl bg-white p-6">
+          <DialogHeader className="text-right">
+            <DialogTitle className="text-xl font-bold text-slate-900">تعديل الشركة</DialogTitle>
+            <DialogDescription className="text-sm text-slate-500">
+              تعديل تفاصيل الشركة ورفع شعار جديد إذا لزم الأمر.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit((data) => editingCompanyId && onSubmit(data, editingCompanyId))} className="space-y-4 mt-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="editName" className="font-semibold text-slate-700">اسم الشركة</Label>
+              <Input
+                id="editName"
+                {...register("name", {
+                  required: "اسم الشركة مطلوب",
+                  minLength: { value: 2, message: "2 أحرف على الأقل" },
+                })}
+                placeholder="أدخل اسم الشركة"
+                disabled={isUpdating}
+                onChange={(e) => {
+                  register("name").onChange(e);
+                  setValue("slug", slugify(e.target.value), {
+                    shouldValidate: true,
+                  });
+                }}
+                className="rounded-xl border-slate-200"
+              />
+              {errors.name && (
+                <p className="text-xs text-red-500">{errors.name.message}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="editDescription" className="font-semibold text-slate-700">الوصف</Label>
+              <Input
+                id="editDescription"
+                {...register("description", {
+                  required: "الوصف مطلوب",
+                  minLength: { value: 5, message: "5 أحرف على الأقل" },
+                })}
+                placeholder="وصف مختصر لنشاط الشركة"
+                disabled={isUpdating}
+                className="rounded-xl border-slate-200"
+              />
+              {errors.description && (
+                <p className="text-xs text-red-500">{errors.description.message}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="editLogo" className="font-semibold text-slate-700">شعار الشركة (اختياري)</Label>
+              <Input
+                id="editLogo"
+                type="file"
+                accept="image/*"
+                {...register("logo")}
+                disabled={isUpdating}
+                className="rounded-xl border-slate-200"
+              />
+            </div>
+
+            <DialogFooter className="flex gap-2 justify-start mt-6 border-t border-slate-100 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={cancelEditing}
+                disabled={isUpdating}
+                className="rounded-xl border-slate-200"
+              >
+                إلغاء
+              </Button>
+              <Button type="submit" disabled={isUpdating} className="rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold">
+                {isUpdating ? "جاري الحفظ..." : "حفظ التغييرات"}
               </Button>
             </DialogFooter>
           </form>

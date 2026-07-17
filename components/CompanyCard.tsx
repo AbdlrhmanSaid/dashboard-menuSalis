@@ -76,7 +76,7 @@ export default function CompanyCard({
 
           {/* Company details */}
           <div className="space-y-1 w-full text-right min-w-0">
-            <CardTitle className="text-base font-bold text-slate-800 hover:text-red-600 transition-colors truncate">
+            <CardTitle className="text-base font-bold text-slate-800 hover:text-red-600 transition-colors">
               {cleanedName}
             </CardTitle>
             
