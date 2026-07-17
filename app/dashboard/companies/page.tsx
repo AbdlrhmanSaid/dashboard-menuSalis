@@ -313,7 +313,7 @@ export default function CompanyDashboard() {
                   required: "اسم الشركة مطلوب",
                   minLength: { value: 2, message: "2 أحرف على الأقل" },
                 })}
-                placeholder="أدخل اسم الشركة (مثال: شركة ساليس للمطاعم)"
+                placeholder="أدخل اسم الشركة (مثال: شركة سَلِس للمطاعم)"
                 disabled={isCreating}
                 onChange={(e) => {
                   registerCreate("name").onChange(e);

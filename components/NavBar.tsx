@@ -36,7 +36,7 @@ export default function NavBar() {
           href="/"
           className="flex items-center gap-2 text-xl font-black text-slate-900 tracking-tight hover:opacity-90 transition-opacity"
         >
-          <span>منيو ساليس</span>
+          <span>منيو سَلِس</span>
           <span className="h-2 w-2 rounded-full bg-red-600" />
         </Link>
       </div>

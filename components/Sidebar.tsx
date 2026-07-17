@@ -79,7 +79,7 @@ export default function SideBar() {
           <Link href="/" className="flex items-center gap-2">
             <span className="h-6 w-1 bg-red-600 rounded-full" />
             <span className="text-lg font-bold tracking-tight text-slate-950">
-              منيو ساليس
+              منيو سَلِس
             </span>
           </Link>
         </div>

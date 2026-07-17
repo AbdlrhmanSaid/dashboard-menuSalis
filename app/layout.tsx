@@ -10,8 +10,8 @@ const tajawal = Tajawal({
 });
 
 export const metadata: Metadata = {
-  title: "منيو ساليس",
-  description: "لوحة تحكم منصة منيو ساليس",
+  title: "منيو سَلِس",
+  description: "لوحة تحكم منصة منيو سَلِس",
 };
 
 export default function RootLayout({

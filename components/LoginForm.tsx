@@ -47,7 +47,7 @@ export default function LoginForm() {
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center gap-2">
             <span className="h-6 w-1.5 bg-red-600 rounded-full" />
-            <span className="text-2xl font-black tracking-tight text-slate-900">منيو ساليس</span>
+            <span className="text-2xl font-black tracking-tight text-slate-900">منيو سَلِس</span>
           </div>
           <p className="text-xs text-slate-400 font-semibold max-w-xs mx-auto leading-relaxed">
             سجل الدخول لإدارة الفروع والمنيوات والمنتجات بكل سهولة.

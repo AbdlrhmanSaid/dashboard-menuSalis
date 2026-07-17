@@ -4,8 +4,8 @@ import Header from "@/components/dashboard/Header";
 import AdminGuard from "@/lib/AdminGuard";
 
 export const metadata: Metadata = {
-  title: "منصة منيو ساليس | لوحة التحكم",
-  description: "لوحة التحكم لإدارة الشركات والفروع والمنيوهات والمنتجات لساليس",
+  title: "منصة منيو سَلِس | لوحة التحكم",
+  description: "لوحة التحكم لإدارة الشركات والفروع والمنيوهات والمنتجات لسَلِس",
 };
 
 export default function RootLayout({

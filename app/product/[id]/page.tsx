@@ -69,7 +69,7 @@ export default function ProductDetailsPage() {
           <BackButton />
           <div className="flex items-center gap-2">
             <span className="h-5 w-1 bg-red-600 rounded-full" />
-            <span className="text-sm font-bold text-slate-800">منيو ساليس</span>
+            <span className="text-sm font-bold text-slate-800">منيو سَلِس</span>
           </div>
         </div>
 

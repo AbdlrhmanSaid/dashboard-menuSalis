@@ -47,7 +47,7 @@ const DashboardPage = () => {
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl text-white">
-              لوحة التحكم الإدارية لمنصة منيو ساليس
+              لوحة التحكم الإدارية لمنصة منيو سَلِس
             </h1>
             <p className="text-red-100 max-w-xl text-base leading-relaxed">
               مرحباً بك {user?.username || "المستخدم"} في نظام التشغيل الموحد لإدارة الشركات والفروع وقوائم الطعام والمنتجات.
