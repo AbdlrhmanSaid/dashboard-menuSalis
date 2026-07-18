@@ -45,7 +45,7 @@ import { Company } from "@/types/company";
 import Image from "next/image";
 import { slugify } from "@/lib/utils";
 import PageHeader from "@/components/dashboard/PageHeader";
-import QRCode from "react-qr-code";
+import { QRCodeSVG } from "qrcode.react";
 
 interface CompanyFormData {
   name: string;
@@ -681,12 +681,24 @@ export default function CompanyDashboard() {
                 ref={qrRef}
                 className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm flex items-center justify-center"
               >
-                <QRCode
+                <QRCodeSVG
                   value={getQrUrl(activeQrCompany.slug)}
                   size={200}
                   level="H"
                   fgColor={qrColor}
                   style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                  imageSettings={
+                    activeQrCompany.logo
+                      ? {
+                          src: activeQrCompany.logo,
+                          x: undefined,
+                          y: undefined,
+                          height: 40,
+                          width: 40,
+                          excavate: true,
+                        }
+                      : undefined
+                  }
                 />
               </div>
 

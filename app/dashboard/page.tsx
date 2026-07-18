@@ -2,6 +2,7 @@
 import React, { memo, useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import DashboardStats from "@/components/dashboard/DashboardStats";
+import DashboardCharts from "@/components/dashboard/DashboardCharts";
 import {
   Shield,
   Clock,
@@ -77,6 +78,14 @@ const DashboardPage = () => {
           إحصائيات النظام العامة
         </h3>
         <DashboardStats />
+      </div>
+
+      {/* Charts and Visual Analytics */}
+      <div className="space-y-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+          التقارير والرسوم البيانية التفاعلية
+        </h3>
+        <DashboardCharts />
       </div>
 
       {/* Quick Actions and Recent Activity Grid */}

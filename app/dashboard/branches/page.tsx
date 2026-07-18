@@ -63,7 +63,7 @@ import {
   UpdateBranchRequest,
 } from "@/types/branch";
 import { Company } from "@/types/company";
-import QRCode from "react-qr-code";
+import { QRCodeSVG } from "qrcode.react";
 import { slugify } from "@/lib/utils";
 import PageHeader from "@/components/dashboard/PageHeader";
 
@@ -110,6 +110,13 @@ export default function BranchesPage() {
     if (!branch) return "";
     const matchedCompany = companies?.find((c) => c._id === branch.company?._id);
     return matchedCompany?.slug || branch.company?.slug || "";
+  };
+
+  // Helper to safely get the company logo
+  const getCompanyLogo = (branch: Branch | null) => {
+    if (!branch) return "";
+    const matchedCompany = companies?.find((c) => c._id === branch.company?._id);
+    return matchedCompany?.logo || "";
   };
 
   // Generate Scan URL for QR code (points to the branch menu page of the company)
@@ -841,12 +848,24 @@ export default function BranchesPage() {
                 ref={qrRef}
                 className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm flex items-center justify-center"
               >
-                <QRCode
+                <QRCodeSVG
                   value={getQrUrl(getCompanySlug(activeQrBranch), activeQrBranch._id)}
                   size={200}
                   level="H"
                   fgColor={qrColor}
                   style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                  imageSettings={
+                    getCompanyLogo(activeQrBranch)
+                      ? {
+                          src: getCompanyLogo(activeQrBranch),
+                          x: undefined,
+                          y: undefined,
+                          height: 40,
+                          width: 40,
+                          excavate: true,
+                        }
+                      : undefined
+                  }
                 />
               </div>
 
