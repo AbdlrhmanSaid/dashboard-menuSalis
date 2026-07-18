@@ -8,7 +8,6 @@ import {
   Activity,
   Plus,
   Package,
-  Building2,
   GitBranch,
   ArrowLeft,
   History as HistoryIcon,

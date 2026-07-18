@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import {
   useCompanies,
   useCreateCompany,
@@ -38,13 +38,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import toast from "react-hot-toast";
-import { Edit2, Trash2, Plus, Search } from "lucide-react";
+import { Edit2, Trash2, Plus, Search, QrCode, Printer, Download, ExternalLink } from "lucide-react";
 import { useForm } from "react-hook-form";
 import Loading from "@/components/Loading";
 import { Company } from "@/types/company";
 import Image from "next/image";
 import { slugify } from "@/lib/utils";
 import PageHeader from "@/components/dashboard/PageHeader";
+import QRCode from "react-qr-code";
 
 interface CompanyFormData {
   name: string;
@@ -72,6 +73,170 @@ export default function CompanyDashboard() {
   const [deletingCompanyId, setDeletingCompanyId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  // QR Code States
+  const [activeQrCompany, setActiveQrCompany] = useState<Company | null>(null);
+  const [qrColor, setQrColor] = useState("#000000");
+  const qrRef = useRef<HTMLDivElement>(null);
+
+  // Generate Scan URL for Company QR code
+  const getQrUrl = (companySlug: string) => {
+    const rawUrl =
+      process.env.NEXT_PUBLIC_SCAN_BASE_URL ||
+      "https://your-custom-domain.com/menus";
+    
+    let baseOrigin = "";
+    if (rawUrl) {
+      try {
+        const urlObj = new URL(rawUrl);
+        baseOrigin = urlObj.origin;
+      } catch {
+        baseOrigin = rawUrl.replace(/\/menus\/?$/, "").replace(/\/+$/, "");
+      }
+    }
+    
+    if (!baseOrigin && typeof window !== "undefined") {
+      baseOrigin = window.location.origin;
+    }
+    
+    if (!baseOrigin) {
+      baseOrigin = "https://your-custom-domain.com";
+    }
+
+    return `${baseOrigin}/companies/${companySlug}`;
+  };
+
+  // Download SVG Helper
+  const downloadSVG = () => {
+    if (!qrRef.current || !activeQrCompany) return;
+    const svgElement = qrRef.current.querySelector("svg");
+    if (!svgElement) return;
+
+    const svgString = new XMLSerializer().serializeToString(svgElement);
+    const svgBlob = new Blob([svgString], {
+      type: "image/svg+xml;charset=utf-8",
+    });
+    const svgUrl = URL.createObjectURL(svgBlob);
+
+    const downloadLink = document.createElement("a");
+    downloadLink.href = svgUrl;
+    downloadLink.download = `company-${activeQrCompany.slug}-qr.svg`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(svgUrl);
+  };
+
+  // Download PNG Helper
+  const downloadPNG = () => {
+    if (!qrRef.current || !activeQrCompany) return;
+    const svgElement = qrRef.current.querySelector("svg");
+    if (!svgElement) return;
+
+    const svgString = new XMLSerializer().serializeToString(svgElement);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new window.Image();
+
+    canvas.width = 512;
+    canvas.height = 512;
+
+    img.onload = () => {
+      if (ctx) {
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        const pngUrl = canvas.toDataURL("image/png");
+        const downloadLink = document.createElement("a");
+        downloadLink.href = pngUrl;
+        downloadLink.download = `company-${activeQrCompany.slug}-qr.png`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+      }
+    };
+
+    img.src =
+      "data:image/svg+xml;base64," +
+      btoa(unescape(encodeURIComponent(svgString)));
+  };
+
+  // Print Helper
+  const printQRCode = () => {
+    if (!activeQrCompany) return;
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html dir="rtl" lang="ar">
+        <head>
+          <title>طباعة رمز QR - شركة ${activeQrCompany.name}</title>
+          <style>
+            body {
+              font-family: system-ui, -apple-system, sans-serif;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              height: 100vh;
+              margin: 0;
+              text-align: center;
+            }
+            .container {
+              border: 2px border-dashed #ccc;
+              padding: 40px;
+              border-radius: 20px;
+              box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            }
+            h1 {
+              margin: 0 0 10px 0;
+              font-size: 28px;
+              color: #111827;
+            }
+            p {
+              margin: 0 0 30px 0;
+              color: #4b5563;
+              font-size: 16px;
+            }
+            .qr-wrapper {
+              margin-bottom: 20px;
+            }
+            .footer-text {
+              margin-top: 20px;
+              font-size: 12px;
+              color: #9ca3af;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>شركة: ${activeQrCompany.name}</h1>
+            <div class="qr-wrapper" id="qr-code-print"></div>
+            <div class="footer-text">امسح الرمز ضوئياً لفتح صفحة الشركة وفروعها مباشرة</div>
+          </div>
+        </body>
+      </html>
+    `);
+
+    const svgMarkup = qrRef.current?.innerHTML || "";
+    printWindow.document.getElementById("qr-code-print")!.innerHTML = svgMarkup;
+
+    const svgElement = printWindow.document.querySelector("svg");
+    if (svgElement) {
+      svgElement.setAttribute("width", "300");
+      svgElement.setAttribute("height", "300");
+    }
+
+    printWindow.document.close();
+    printWindow.focus();
+
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
+  };
   
   const {
     register,
@@ -265,6 +430,15 @@ export default function CompanyDashboard() {
                     {isSupervisor && (
                       <TableCell>
                         <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setActiveQrCompany(company)}
+                            className="h-8 w-8 rounded-lg text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+                            title="رمز الاستجابة السريعة (QR)"
+                          >
+                            <QrCode className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -480,6 +654,122 @@ export default function CompanyDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* QR Code Dialog Modal */}
+      <Dialog
+        open={!!activeQrCompany}
+        onOpenChange={(open) => !open && setActiveQrCompany(null)}
+      >
+        <DialogContent className="max-w-md rounded-2xl bg-white p-6" dir="rtl">
+          <DialogHeader className="text-right">
+            <DialogTitle className="text-xl font-bold text-gray-900">
+              رمز الاستجابة السريعة للشركة (QR Code)
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500">
+              امسح الرمز ضوئياً للوصول المباشر إلى صفحة شركة{" "}
+              <span className="font-semibold text-gray-800">
+                {activeQrCompany?.name}
+              </span>
+              .
+            </DialogDescription>
+          </DialogHeader>
+
+          {activeQrCompany && (
+            <div className="my-6 flex flex-col items-center justify-center space-y-4">
+              {/* QR Code Wrapper */}
+              <div
+                ref={qrRef}
+                className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm flex items-center justify-center"
+              >
+                <QRCode
+                  value={getQrUrl(activeQrCompany.slug)}
+                  size={200}
+                  level="H"
+                  fgColor={qrColor}
+                  style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                />
+              </div>
+
+              {/* Color Customization Panel */}
+              <div className="w-full space-y-2 border-t border-slate-100 pt-4 text-right">
+                <span className="text-xs font-extrabold text-slate-500 block">
+                  تخصيص لون رمز الاستجابة السريعة (Branding):
+                </span>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={qrColor}
+                    onChange={(e) => setQrColor(e.target.value)}
+                    className="h-8 w-14 rounded-lg cursor-pointer border border-slate-200"
+                    title="اختر لون الـ QR"
+                  />
+                  <div className="flex flex-wrap gap-1.5">
+                    {["#000000", "#dc2626", "#2563eb", "#16a34a", "#7c3aed", "#ea580c"].map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setQrColor(color)}
+                        className="h-6 w-6 rounded-full border border-slate-200 transition-transform hover:scale-110"
+                        style={{ backgroundColor: color }}
+                        title={color}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Dynamic redirection link details */}
+              <div className="w-full text-center space-y-1">
+                <span className="text-xs font-semibold text-gray-400">
+                  رابط التوجيه المباشر للشركة:
+                </span>
+                <div className="flex items-center justify-center gap-1.5 text-xs text-red-600 font-mono bg-red-50/50 py-1.5 px-3 rounded-lg border border-red-50">
+                  <span className="truncate max-w-[280px]">{getQrUrl(activeQrCompany.slug)}</span>
+                  <a
+                    href={getQrUrl(activeQrCompany.slug)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-red-700 shrink-0"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-start w-full border-t border-gray-100 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={printQRCode}
+              className="flex items-center gap-2 rounded-xl border-gray-200"
+            >
+              <Printer className="h-4 w-4" />
+              <span>طباعة الرمز</span>
+            </Button>
+            <div className="flex flex-1 gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={downloadSVG}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gray-100 hover:bg-gray-200"
+              >
+                <Download className="h-4 w-4" />
+                <span>تحميل SVG</span>
+              </Button>
+              <Button
+                type="button"
+                onClick={downloadPNG}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 text-white"
+              >
+                <Download className="h-4 w-4" />
+                <span>تحميل PNG</span>
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

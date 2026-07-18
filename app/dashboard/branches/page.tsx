@@ -102,6 +102,7 @@ export default function BranchesPage() {
 
   // QR Code States
   const [activeQrBranch, setActiveQrBranch] = useState<Branch | null>(null);
+  const [qrColor, setQrColor] = useState("#000000");
   const qrRef = useRef<HTMLDivElement>(null);
 
   // Helper to safely get the company slug
@@ -844,8 +845,37 @@ export default function BranchesPage() {
                   value={getQrUrl(getCompanySlug(activeQrBranch), activeQrBranch._id)}
                   size={200}
                   level="H"
+                  fgColor={qrColor}
                   style={{ height: "auto", maxWidth: "100%", width: "100%" }}
                 />
+              </div>
+
+              {/* Color Customization Panel */}
+              <div className="w-full space-y-2 border-t border-slate-100 pt-4 text-right">
+                <span className="text-xs font-extrabold text-slate-500 block">
+                  تخصيص لون رمز الاستجابة السريعة (Branding):
+                </span>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={qrColor}
+                    onChange={(e) => setQrColor(e.target.value)}
+                    className="h-8 w-14 rounded-lg cursor-pointer border border-slate-200"
+                    title="اختر لون الـ QR"
+                  />
+                  <div className="flex flex-wrap gap-1.5">
+                    {["#000000", "#dc2626", "#2563eb", "#16a34a", "#7c3aed", "#ea580c"].map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setQrColor(color)}
+                        className="h-6 w-6 rounded-full border border-slate-200 transition-transform hover:scale-110"
+                        style={{ backgroundColor: color }}
+                        title={color}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* Dynamic redirection link details */}
