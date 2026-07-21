@@ -200,7 +200,7 @@ export default function CompanyMenuPage() {
                         <ProductItem
                           product={product}
                           branchId={branchId}
-                          price={product.price}
+                          price={product.finalPrice ?? product.price}
                         />
                       </Link>
                     ))}

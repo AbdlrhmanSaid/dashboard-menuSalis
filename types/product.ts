@@ -20,6 +20,9 @@ export interface Product {
     _id: string;
     name: string;
   }[];
+  originalPrice?: number;
+  finalPrice?: number;
+  activePromotion?: any; // We will import Promotion type or use any for now to avoid circular dependency if needed, but better to use import. Let's just use any for quick typing
   createdAt: string;
   updatedAt: string;
   __v: number;

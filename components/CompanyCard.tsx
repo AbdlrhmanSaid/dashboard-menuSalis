@@ -45,6 +45,8 @@ export default function CompanyCard({
     }
   };
 
+  const logoUrl = typeof company.logo === 'string' ? company.logo : (company.logo?.url || '');
+
   return (
     <motion.div
       whileHover={{ y: -5 }}
@@ -60,9 +62,9 @@ export default function CompanyCard({
         <div className="flex items-start gap-4.5">
           {/* Logo container (right-aligned in RTL) */}
           <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50/50 border border-slate-100/60 shadow-inner overflow-hidden shrink-0">
-            {company.logo ? (
+            {logoUrl ? (
               <Image
-                src={company.logo}
+                src={logoUrl}
                 alt={`شعار ${cleanedName}`}
                 width={56}
                 height={56}

@@ -8,6 +8,9 @@ export interface Product {
     url: string;
   } | null;
   availableBranches?: string[];
+  finalPrice?: number;
+  originalPrice?: number;
+  activePromotion?: any;
 }
 
 export interface Menu {

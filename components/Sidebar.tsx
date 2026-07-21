@@ -14,6 +14,7 @@ import {
   ShoppingBasket,
   History,
   LogOut,
+  Tags,
 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,14 +22,60 @@ import { toast } from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 
 const menuItems = [
-  { label: "لوحة التحكم", icon: LayoutDashboard, href: "/dashboard", color: "text-slate-500" },
-  { label: "المستخدمين", icon: Users, href: "/dashboard/users", color: "text-slate-500" },
-  { label: "الشركات", icon: Building2, href: "/dashboard/companies", color: "text-slate-500" },
-  { label: "الفروع", icon: Store, href: "/dashboard/branches", color: "text-slate-500" },
-  { label: "القوائم", icon: SquareMenu, href: "/dashboard/menus", color: "text-slate-500" },
-  { label: "المنتجات", icon: ShoppingBasket, href: "/dashboard/products", color: "text-slate-500" },
-  { label: "السجل", icon: History, href: "/dashboard/history", color: "text-slate-500" },
-  { label: "الإعدادات", icon: Settings, href: "/dashboard/settings", color: "text-slate-500" },
+  {
+    label: "لوحة التحكم",
+    icon: LayoutDashboard,
+    href: "/dashboard",
+    color: "text-slate-500",
+  },
+  {
+    label: "المستخدمين",
+    icon: Users,
+    href: "/dashboard/users",
+    color: "text-slate-500",
+  },
+  {
+    label: "الشركات",
+    icon: Building2,
+    href: "/dashboard/companies",
+    color: "text-slate-500",
+  },
+  {
+    label: "الفروع",
+    icon: Store,
+    href: "/dashboard/branches",
+    color: "text-slate-500",
+  },
+  {
+    label: "القوائم",
+    icon: SquareMenu,
+    href: "/dashboard/menus",
+    color: "text-slate-500",
+  },
+  {
+    label: "المنتجات",
+    icon: ShoppingBasket,
+    href: "/dashboard/products",
+    color: "text-slate-500",
+  },
+  {
+    label: "العروض",
+    icon: Tags,
+    href: "/dashboard/promotions",
+    color: "text-slate-500",
+  },
+  {
+    label: "السجل",
+    icon: History,
+    href: "/dashboard/history",
+    color: "text-slate-500",
+  },
+  {
+    label: "الإعدادات",
+    icon: Settings,
+    href: "/dashboard/settings",
+    color: "text-slate-500",
+  },
 ];
 
 export default function SideBar() {

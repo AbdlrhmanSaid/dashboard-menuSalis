@@ -52,6 +52,9 @@ interface CompanyFormData {
   slug: string;
   description: string;
   logo?: FileList;
+  cover?: FileList;
+  primaryColor?: string;
+  secondaryColor?: string;
 }
 
 interface CreateCompanyFormData {
@@ -59,6 +62,9 @@ interface CreateCompanyFormData {
   slug: string;
   description: string;
   logo?: FileList;
+  cover?: FileList;
+  primaryColor?: string;
+  secondaryColor?: string;
 }
 
 export default function CompanyDashboard() {
@@ -253,7 +259,7 @@ export default function CompanyDashboard() {
     setValue: setValueCreate,
     formState: { errors: createErrors },
   } = useForm<CreateCompanyFormData>({
-    defaultValues: { name: "", slug: "", description: "" },
+    defaultValues: { name: "", slug: "", description: "", primaryColor: "#dc2626", secondaryColor: "#1e293b" },
   });
 
   const filteredCompanies = useMemo<Company[]>(() => {
@@ -268,6 +274,8 @@ export default function CompanyDashboard() {
     setValue("name", company.name);
     setValue("slug", company.slug);
     setValue("description", company.description);
+    setValue("primaryColor", company.primaryColor || "#dc2626");
+    setValue("secondaryColor", company.secondaryColor || "#1e293b");
     setIsEditDialogOpen(true);
   };
 
@@ -280,6 +288,7 @@ export default function CompanyDashboard() {
   const onSubmit = async (data: CompanyFormData, companyId: string) => {
     try {
       const logoFile = data.logo && data.logo[0] ? data.logo[0] : null;
+      const coverFile = data.cover && data.cover[0] ? data.cover[0] : null;
       updateCompany(
         {
           id: companyId,
@@ -288,6 +297,9 @@ export default function CompanyDashboard() {
             slug: data.slug,
             description: data.description,
             logoFile,
+            coverFile,
+            primaryColor: data.primaryColor,
+            secondaryColor: data.secondaryColor,
           },
         },
         {
@@ -309,12 +321,16 @@ export default function CompanyDashboard() {
   const onCreateSubmit = async (data: CreateCompanyFormData) => {
     try {
       const logoFile = data.logo && data.logo[0] ? data.logo[0] : null;
+      const coverFile = data.cover && data.cover[0] ? data.cover[0] : null;
       createCompany(
         {
           name: data.name,
           slug: data.slug,
           description: data.description,
           logoFile,
+          coverFile,
+          primaryColor: data.primaryColor,
+          secondaryColor: data.secondaryColor,
         },
         {
           onSuccess: () => {
@@ -387,6 +403,7 @@ export default function CompanyDashboard() {
           <TableHeader className="bg-slate-50/70">
             <TableRow>
               <TableHead className="font-bold text-slate-700 text-right">شعار الشركة</TableHead>
+              <TableHead className="font-bold text-slate-700 text-right">غلاف الشركة</TableHead>
               <TableHead className="font-bold text-slate-700 text-right">اسم الشركة</TableHead>
               <TableHead className="font-bold text-slate-700 text-right">الوصف</TableHead>
               {isSupervisor && (
@@ -409,19 +426,40 @@ export default function CompanyDashboard() {
                     className="hover:bg-slate-50/50 transition-colors duration-150"
                   >
                     <TableCell>
-                      {company.logo ? (
-                        <Image
-                          width={44}
-                          height={44}
-                          src={company.logo}
-                          alt={company.name}
-                          className="h-11 w-11 object-cover rounded-xl border border-slate-100 shadow-inner"
-                        />
-                      ) : (
-                        <div className="h-11 w-11 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center text-xs font-semibold">
-                          لا يوجد
-                        </div>
-                      )}
+                      {(() => {
+                        const logoUrl = typeof company.logo === 'string' ? company.logo : company.logo?.url;
+                        return logoUrl ? (
+                          <Image
+                            width={44}
+                            height={44}
+                            src={logoUrl}
+                            alt={company.name}
+                            className="h-11 w-11 object-cover rounded-xl border border-slate-100 shadow-inner"
+                          />
+                        ) : (
+                          <div className="h-11 w-11 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center text-xs font-semibold">
+                            لا يوجد
+                          </div>
+                        );
+                      })()}
+                    </TableCell>
+                    <TableCell>
+                      {(() => {
+                        const coverUrl = typeof company.cover === 'string' ? company.cover : company.cover?.url;
+                        return coverUrl ? (
+                          <Image
+                            width={44}
+                            height={44}
+                            src={coverUrl}
+                            alt={`${company.name} Cover`}
+                            className="h-11 w-11 object-cover rounded-xl border border-slate-100 shadow-inner"
+                          />
+                        ) : (
+                          <div className="h-11 w-11 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center text-xs font-semibold">
+                            لا يوجد
+                          </div>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell className="font-semibold text-slate-800">{company.name}</TableCell>
                     <TableCell className="text-slate-500 max-w-[300px] truncate" title={company.description}>
@@ -531,6 +569,46 @@ export default function CompanyDashboard() {
               />
             </div>
 
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="createCover" className="font-semibold text-slate-700">غلاف الشركة (اختياري)</Label>
+              <Input
+                id="createCover"
+                type="file"
+                accept="image/*"
+                {...registerCreate("cover")}
+                disabled={isCreating}
+                className="rounded-xl border-slate-200"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="createPrimaryColor" className="font-semibold text-slate-700">اللون الأساسي (اختياري)</Label>
+              <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    id="createPrimaryColor"
+                    {...registerCreate("primaryColor")}
+                    disabled={isCreating}
+                    className="h-10 w-14 rounded-lg cursor-pointer border border-slate-200"
+                  />
+                  <span className="text-sm text-slate-500">اختر اللون المميز للعلامة التجارية</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="createSecondaryColor" className="font-semibold text-slate-700">اللون الثانوي (اختياري)</Label>
+              <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    id="createSecondaryColor"
+                    {...registerCreate("secondaryColor")}
+                    disabled={isCreating}
+                    className="h-10 w-14 rounded-lg cursor-pointer border border-slate-200"
+                  />
+                  <span className="text-sm text-slate-500">اختر اللون الثانوي</span>
+              </div>
+            </div>
+
             <DialogFooter className="flex gap-2 justify-start mt-6 border-t border-slate-100 pt-4">
               <Button
                 type="button"
@@ -615,6 +693,46 @@ export default function CompanyDashboard() {
               />
             </div>
 
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="editCover" className="font-semibold text-slate-700">غلاف الشركة (اختياري)</Label>
+              <Input
+                id="editCover"
+                type="file"
+                accept="image/*"
+                {...register("cover")}
+                disabled={isUpdating}
+                className="rounded-xl border-slate-200"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="editPrimaryColor" className="font-semibold text-slate-700">اللون الأساسي (اختياري)</Label>
+              <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    id="editPrimaryColor"
+                    {...register("primaryColor")}
+                    disabled={isUpdating}
+                    className="h-10 w-14 rounded-lg cursor-pointer border border-slate-200"
+                  />
+                  <span className="text-sm text-slate-500">تحديث اللون الأساسي</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="editSecondaryColor" className="font-semibold text-slate-700">اللون الثانوي (اختياري)</Label>
+              <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    id="editSecondaryColor"
+                    {...register("secondaryColor")}
+                    disabled={isUpdating}
+                    className="h-10 w-14 rounded-lg cursor-pointer border border-slate-200"
+                  />
+                  <span className="text-sm text-slate-500">تحديث اللون الثانوي</span>
+              </div>
+            </div>
+
             <DialogFooter className="flex gap-2 justify-start mt-6 border-t border-slate-100 pt-4">
               <Button
                 type="button"
@@ -690,7 +808,7 @@ export default function CompanyDashboard() {
                   imageSettings={
                     activeQrCompany.logo
                       ? {
-                          src: activeQrCompany.logo,
+                          src: typeof activeQrCompany.logo === 'string' ? activeQrCompany.logo : (activeQrCompany.logo?.url || ''),
                           x: undefined,
                           y: undefined,
                           height: 40,

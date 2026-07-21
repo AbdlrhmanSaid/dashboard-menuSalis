@@ -8,22 +8,16 @@ import {
 } from "@/services/companyService";
 import toast from "react-hot-toast";
 
-interface Company {
-  _id: string;
-  name: string;
-  slug: string;
-  description: string;
-  logo?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  __v: number;
-}
+import { Company } from "@/types/company";
 
 interface CreateCompanyRequest {
   name: string;
   slug: string;
   description: string;
   logoFile?: File | null;
+  coverFile?: File | null;
+  primaryColor?: string;
+  secondaryColor?: string;
 }
 
 interface UpdateCompanyRequest {
@@ -31,6 +25,9 @@ interface UpdateCompanyRequest {
   slug?: string;
   description?: string;
   logoFile?: File | null;
+  coverFile?: File | null;
+  primaryColor?: string;
+  secondaryColor?: string;
 }
 
 export const useCompanies = () => {

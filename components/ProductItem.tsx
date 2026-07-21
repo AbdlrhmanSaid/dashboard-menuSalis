@@ -57,9 +57,16 @@ export default function ProductItem({
         <div className="flex items-start justify-between gap-2">
           <h4 className="text-sm font-bold text-slate-800">{cleanedName}</h4>
           
-          <span className="text-sm font-bold text-red-600 shrink-0">
+        <div className="flex flex-col items-end shrink-0">
+          <span className={`text-sm font-bold ${product.activePromotion ? 'text-rose-600' : 'text-red-600'}`}>
             {price ? `${price} ج.م` : "—"}
           </span>
+          {product.originalPrice && product.originalPrice !== price && (
+            <span className="text-[11px] font-bold text-slate-400 line-through decoration-rose-300">
+              {product.originalPrice} ج.م
+            </span>
+          )}
+        </div>
         </div>
 
         <p className="text-xs text-slate-400 font-medium line-clamp-2">
