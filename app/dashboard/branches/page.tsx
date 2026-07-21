@@ -113,10 +113,13 @@ export default function BranchesPage() {
   };
 
   // Helper to safely get the company logo
-  const getCompanyLogo = (branch: Branch | null) => {
+  const getCompanyLogo = (branch: Branch | null): string => {
     if (!branch) return "";
     const matchedCompany = companies?.find((c) => c._id === branch.company?._id);
-    return matchedCompany?.logo || "";
+    const logo = matchedCompany?.logo;
+    if (typeof logo === 'string') return logo;
+    if (logo && typeof logo === 'object' && 'url' in logo) return (logo as { url: string }).url;
+    return "";
   };
 
   // Generate Scan URL for QR code (points to the branch menu page of the company)
