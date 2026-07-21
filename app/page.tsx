@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { memo, useState, useMemo, useEffect, useRef } from "react";
@@ -197,7 +198,6 @@ function CompaniesPage() {
                       <div className="space-y-4">
                         {/* Header info */}
                         <div className="flex gap-4 items-start">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           {product.image?.url ? (
                             <img
                               src={product.image.url}

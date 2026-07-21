@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import toast from "react-hot-toast";
 import { Edit2, Trash2, Plus, Search, Tag, Image as ImageIcon, CheckCircle, XCircle } from "lucide-react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import Loading from "@/components/Loading";
 import { Promotion } from "@/types/promotion";
 import Image from "next/image";
@@ -88,7 +88,6 @@ export default function PromotionsDashboard() {
     handleSubmit: handleSubmitCreate,
     reset: resetCreate,
     watch: watchCreate,
-    formState: { errors: createErrors },
   } = useForm<PromotionFormData>({
     defaultValues: { 
       title: "", 
@@ -106,7 +105,6 @@ export default function PromotionsDashboard() {
     reset,
     setValue,
     watch,
-    formState: { errors },
   } = useForm<PromotionFormData>();
 
   const watchCreateTargetType = watchCreate("targetType");
@@ -161,8 +159,8 @@ export default function PromotionsDashboard() {
           },
         }
       );
-    } catch (error: any) {
-      toast.error(error?.message || "فشل تحديث العرض");
+    } catch (error: unknown) {
+      toast.error((error as Error)?.message || "فشل تحديث العرض");
     }
   };
 
@@ -184,8 +182,8 @@ export default function PromotionsDashboard() {
           },
         }
       );
-    } catch (error: any) {
-      toast.error(error?.message || "فشل إنشاء العرض");
+    } catch (error: unknown) {
+      toast.error((error as Error)?.message || "فشل إنشاء العرض");
     }
   };
 
@@ -214,15 +212,17 @@ export default function PromotionsDashboard() {
 
   const renderTargetOptions = (targetType: string, companyFilter?: string) => {
     if (targetType === "Company" && companies) {
-      return (companies as any[]).map((c: any) => <option key={c._id} value={c._id}>{c.name}</option>);
+      return (companies as { _id: string; name: string }[]).map((c) => <option key={c._id} value={c._id}>{c.name}</option>);
     }
     if (targetType === "Menu" && menus) {
-      const filtered = companyFilter ? (menus as any[]).filter(m => m.company?._id === companyFilter) : (menus as any[]);
-      return filtered.map((m: any) => <option key={m._id} value={m._id}>{m.name}</option>);
+      type MenuType = { _id: string; name: string; company?: { _id: string } };
+      const filtered = companyFilter ? (menus as MenuType[]).filter(m => m.company?._id === companyFilter) : (menus as MenuType[]);
+      return filtered.map((m) => <option key={m._id} value={m._id}>{m.name}</option>);
     }
     if (targetType === "Product" && products) {
-      const filtered = companyFilter ? (products as any[]).filter(p => p.menu?.company?._id === companyFilter || p.company?._id === companyFilter) : (products as any[]);
-      return filtered.map((p: any) => <option key={p._id} value={p._id}>{p.name}</option>);
+      type ProductType = { _id: string; name: string; company?: { _id: string }; menu?: { company?: { _id: string } } };
+      const filtered = companyFilter ? (products as ProductType[]).filter(p => p.menu?.company?._id === companyFilter || p.company?._id === companyFilter) : (products as ProductType[]);
+      return filtered.map((p) => <option key={p._id} value={p._id}>{p.name}</option>);
     }
     return <option value="">اختر...</option>;
   };
@@ -453,7 +453,7 @@ export default function PromotionsDashboard() {
                     className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
                   >
                     <option value="">جميع الشركات</option>
-                    {companies?.map((c: any) => (
+                    {companies?.map((c: { _id: string; name: string }) => (
                       <option key={c._id} value={c._id}>{c.name}</option>
                     ))}
                   </select>
@@ -597,7 +597,7 @@ export default function PromotionsDashboard() {
                     className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
                   >
                     <option value="">جميع الشركات</option>
-                    {companies?.map((c: any) => (
+                    {companies?.map((c: { _id: string; name: string }) => (
                       <option key={c._id} value={c._id}>{c.name}</option>
                     ))}
                   </select>
