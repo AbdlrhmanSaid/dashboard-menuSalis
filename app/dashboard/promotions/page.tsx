@@ -126,8 +126,13 @@ export default function PromotionsDashboard() {
     setValue("discountType", promotion.discountType);
     setValue("discountValue", promotion.discountValue);
     setValue("priority", promotion.priority);
-    setValue("startDate", new Date(promotion.startDate).toISOString().slice(0, 16));
-    setValue("endDate", new Date(promotion.endDate).toISOString().slice(0, 16));
+    const start = new Date(promotion.startDate);
+    start.setMinutes(start.getMinutes() - start.getTimezoneOffset());
+    setValue("startDate", start.toISOString().slice(0, 16));
+
+    const end = new Date(promotion.endDate);
+    end.setMinutes(end.getMinutes() - end.getTimezoneOffset());
+    setValue("endDate", end.toISOString().slice(0, 16));
     setIsEditDialogOpen(true);
   };
 
@@ -145,6 +150,8 @@ export default function PromotionsDashboard() {
           id: promotionId,
           data: {
             ...data,
+            startDate: new Date(data.startDate).toISOString(),
+            endDate: new Date(data.endDate).toISOString(),
             bannerFile,
             userName: user?.username,
           },
@@ -170,6 +177,8 @@ export default function PromotionsDashboard() {
       createPromotion(
         {
           ...data,
+          startDate: new Date(data.startDate).toISOString(),
+          endDate: new Date(data.endDate).toISOString(),
           bannerFile,
           userName: user?.username || "Admin",
         },
